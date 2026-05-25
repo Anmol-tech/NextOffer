@@ -1,0 +1,39 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.swp
+*.swo
+
+# Java / Spring Boot (NextOffer)
+NextOffer/target/
+NextOffer/.mvn/wrapper/maven-wrapper.jar
+NextOffer/build/
+NextOffer/.apt_generated
+NextOffer/.classpath
+NextOffer/.factorypath
+NextOffer/.project
+NextOffer/.settings/
+NextOffer/.springBeans
+NextOffer/.sts4-cache
+
+# Node / React (NextOffer-FE)
+NextOffer-FE/node_modules/
+NextOffer-FE/dist/
+NextOffer-FE/dist-ssr/
+NextOffer-FE/*.local
+
+# Logs
+*.log
+logs/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
