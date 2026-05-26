@@ -19,8 +19,19 @@ See **[docs/DESIGN_PATTERNS.md](docs/DESIGN_PATTERNS.md)** for the full catalog 
 
 ```bash
 cp .env.example .env
-# Set SPRING_DATASOURCE_* in .env at repo root
+# Set SPRING_DATASOURCE_* and JWT_SECRET (min 32 chars) in .env at repo root
 
 cd NextOffer && ./mvnw spring-boot:run
 cd NextOffer-FE && npm install && npm run dev
 ```
+
+## Auth API (`/api/auth`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/api/auth/register` | No | Create account |
+| `POST` | `/api/auth/login` | No | Login, returns JWT |
+| `GET` | `/api/auth/me` | Bearer token | Current user profile |
+
+Register/login body (JSON): `email`, `password` (min 8 chars), `fullName` (register only).  
+Response: `{ "token": "...", "user": { "id", "email", "fullName", "createdAt" } }`.
