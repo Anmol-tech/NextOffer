@@ -24,16 +24,55 @@
   padding: 4px 6px;
 }
 
-.brand-mark {
+.brand-mark,
+.brand-logo {
   width: 42px;
   height: 42px;
   border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.brand-mark {
   background: var(--ink);
   color: #fff;
   display: grid;
   place-items: center;
   font-size: 13px;
   font-weight: 800;
+}
+
+.brand-logo {
+  object-fit: cover;
+  background: #fff;
+  border: 1px solid var(--border);
+}
+
+.brand-logo-large {
+  width: 56px;
+  height: 56px;
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.auth-brand strong,
+.auth-brand span {
+  display: block;
+}
+
+.auth-brand strong {
+  color: var(--text-strong);
+  font-size: 20px;
+}
+
+.auth-brand span {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-top: 2px;
 }
 
 .brand strong,

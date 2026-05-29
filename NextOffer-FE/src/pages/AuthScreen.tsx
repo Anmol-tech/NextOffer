@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { formatAuthError, useAuth } from '../context/AuthContext'
-import { PanelHeader } from '../components/PanelHeader'
 import '../App.css'
 
 export function AuthScreen() {
@@ -32,7 +31,13 @@ export function AuthScreen() {
   return (
     <main className="auth-shell">
       <article className="panel auth-panel auth-panel-centered">
-        <PanelHeader title="NextOffer" action={authMode === 'login' ? 'Sign in' : 'Register'} />
+        <div className="auth-brand">
+          <img className="brand-logo brand-logo-large" src="/nextoffer-logo.png" alt="NextOffer logo" />
+          <div>
+            <strong>NextOffer</strong>
+            <span>AI application assistant</span>
+          </div>
+        </div>
         <p className="auth-lead">Sign in to sync company watches and discovered jobs from the backend.</p>
 
         <div className="segmented-control">

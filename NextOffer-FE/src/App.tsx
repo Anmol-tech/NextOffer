@@ -40,7 +40,7 @@ function App() {
     <main className="app-shell">
       <aside className="sidebar" aria-label="Primary navigation">
         <div className="brand">
-          <span className="brand-mark">NO</span>
+          <img className="brand-logo" src="/nextoffer-logo.png" alt="NextOffer logo" />
           <div>
             <strong>NextOffer</strong>
             <span>AI application assistant</span>
