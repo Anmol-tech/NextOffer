@@ -1,6 +1,7 @@
 package com.example.nextoffer.career;
 
 import com.example.nextoffer.job.JobPostingDto;
+import com.example.nextoffer.watch.CompanyWatch;
 
 import java.util.List;
 
@@ -10,4 +11,8 @@ import java.util.List;
 public interface CareerPageFetchStrategy {
 
     List<JobPostingDto> fetch(String careerPageUrl);
+
+    default List<JobPostingDto> fetchForWatch(CompanyWatch watch) {
+        return fetch(watch.getCareerPageUrl());
+    }
 }

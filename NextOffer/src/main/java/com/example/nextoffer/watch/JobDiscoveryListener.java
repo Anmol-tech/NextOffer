@@ -7,5 +7,5 @@ import com.example.nextoffer.job.JobPostingDto;
  */
 public interface JobDiscoveryListener {
 
-    void onNewJobDiscovered(JobPostingDto job);
+    void onNewJobDiscovered(JobPostingDto job, Long companyWatchId);
 }

@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Observer — subject that notifies listeners of newly discovered jobs.
+ * Observer — subject that notifies listeners when a new job is discovered.
  */
 public class CompanyWatchSubject {
 
@@ -16,7 +16,7 @@ public class CompanyWatchSubject {
         listeners.add(listener);
     }
 
-    public void notifyNewJob(JobPostingDto job) {
-        listeners.forEach(listener -> listener.onNewJobDiscovered(job));
+    public void notifyNewJob(JobPostingDto job, Long companyWatchId) {
+        listeners.forEach(listener -> listener.onNewJobDiscovered(job, companyWatchId));
     }
 }

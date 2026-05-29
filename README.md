@@ -35,3 +35,22 @@ cd NextOffer-FE && npm install && npm run dev
 
 Register/login body (JSON): `email`, `password` (min 8 chars), `fullName` (register only).  
 Response: `{ "token": "...", "user": { "id", "email", "fullName", "createdAt" } }`.
+
+## Company watch & jobs API
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/watches` | List your target companies |
+| `POST` | `/api/watches` | Add a company to watch |
+| `GET` | `/api/watches/{id}` | Get one watch |
+| `PUT` | `/api/watches/{id}` | Update watch |
+| `DELETE` | `/api/watches/{id}` | Remove watch |
+| `POST` | `/api/watches/{id}/poll` | Poll career page now (detect new jobs) |
+| `GET` | `/api/jobs` | List discovered jobs (newest first) |
+| `GET` | `/api/jobs/{id}` | Get one job |
+
+Create watch body: `companyName`, `careerPageUrl`, optional `boardToken`, `atsType` (`GREENHOUSE`), `enabled`.
+
+Greenhouse example URL: `https://boards.greenhouse.io/stripe` (board token parsed automatically).
+
+Scheduled polling runs every 15 minutes by default (`WATCH_POLL_INTERVAL_MS` in `.env`).
