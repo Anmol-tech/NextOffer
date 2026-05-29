@@ -49,3 +49,43 @@ export type ApiProblem = {
   status?: number
   errors?: Record<string, string>
 }
+
+export type ResumeOutputStatus = 'PDF_READY' | 'LATEX_ONLY' | 'FAILED'
+
+export type ResumeSourceFormat = 'TEXT' | 'LATEX'
+
+export type BaseResume = {
+  id: number
+  rawText: string
+  updatedAt: string
+  sourceFormat: ResumeSourceFormat
+}
+
+export type TailoredResumeContent = {
+  summary: string
+  skills: string[]
+  experienceBullets: string[]
+}
+
+export type TailoredResumeSummary = {
+  id: number
+  jobPostingId: number
+  jobTitle: string
+  companyName: string
+  outputStatus: ResumeOutputStatus
+  summaryPreview: string | null
+  createdAt: string
+}
+
+export type TailoredResumeDetail = {
+  id: number
+  jobPostingId: number
+  jobTitle: string
+  companyName: string
+  content: TailoredResumeContent
+  latexContent: string | null
+  sourceFormat: ResumeSourceFormat
+  outputStatus: ResumeOutputStatus
+  pdfAvailable: boolean
+  createdAt: string
+}
