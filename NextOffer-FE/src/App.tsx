@@ -1,122 +1,99 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { useMemo, useState } from 'react'
+import { jobs, navItems } from './data/mockData'
+import { DashboardPage } from './pages/DashboardPage'
+import { JobsPage } from './pages/JobsPage'
+import { ResumesPage } from './pages/ResumesPage'
+import { SettingsPage } from './pages/SettingsPage'
+import { TrackerPage } from './pages/TrackerPage'
+import type { View } from './types'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [activeView, setActiveView] = useState<View>('dashboard')
+  const [selectedJobId, setSelectedJobId] = useState(jobs[0].id)
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
+
+  const selectedJob = useMemo(
+    () => jobs.find((job) => job.id === selectedJobId) ?? jobs[0],
+    [selectedJobId],
+  )
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <main className="app-shell">
+      <aside className="sidebar" aria-label="Primary navigation">
+        <div className="brand">
+          <span className="brand-mark">NO</span>
+          <div>
+            <strong>NextOffer</strong>
+            <span>AI application assistant</span>
+          </div>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
+
+        <nav className="nav-list">
+          {navItems.map((item) => (
+            <button
+              className={activeView === item.id ? 'active' : ''}
+              key={item.id}
+              onClick={() => setActiveView(item.id)}
+              type="button"
+            >
+              <span>{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="sidebar-panel">
+          <span className="eyebrow">Backend handoff</span>
+          <p>Mock data only. API boundaries are grouped in auth, jobs, resumes, and tracker surfaces.</p>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
+      </aside>
+
+      <section className="workspace">
+        <header className="topbar">
+          <div>
+            <p className="eyebrow">Student workspace</p>
+            <h1>{pageTitle(activeView)}</h1>
+          </div>
+          <div className="topbar-actions">
+            <button className="ghost-button" type="button" onClick={() => setActiveView('resumes')}>
+              Upload resume
+            </button>
+            <button className="primary-button" type="button" onClick={() => setActiveView('resumes')}>
+              Tailor resume
+            </button>
+          </div>
+        </header>
+
+        {activeView === 'dashboard' && (
+          <DashboardPage selectedJob={selectedJob} onSelectJob={setSelectedJobId} onNavigate={setActiveView} />
+        )}
+        {activeView === 'jobs' && (
+          <JobsPage selectedJob={selectedJob} selectedJobId={selectedJobId} onSelectJob={setSelectedJobId} />
+        )}
+        {activeView === 'resumes' && <ResumesPage selectedJob={selectedJob} />}
+        {activeView === 'tracker' && <TrackerPage />}
+        {activeView === 'settings' && (
+          <SettingsPage authMode={authMode} onAuthModeChange={setAuthMode} />
+        )}
       </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+    </main>
   )
+}
+
+function pageTitle(view: View) {
+  switch (view) {
+    case 'jobs':
+      return 'Review matched jobs and choose the next resume target.'
+    case 'resumes':
+      return 'Manage base resumes, versions, and tailoring runs.'
+    case 'tracker':
+      return 'Move each application through a simple, visible pipeline.'
+    case 'settings':
+      return 'Prepare auth and API integration without calling the backend yet.'
+    default:
+      return 'Track roles, tailor resumes, and move faster.'
+  }
 }
 
 export default App
