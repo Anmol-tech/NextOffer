@@ -1,10 +1,14 @@
-import { jobs } from '../data/mockData'
+import type { Job } from '../types'
 import { PanelHeader } from '../components/PanelHeader'
 import type { JobStatus } from '../types'
 
 const statuses: JobStatus[] = ['New', 'Viewed', 'Applied', 'Rejected']
 
-export function TrackerPage() {
+type TrackerPageProps = {
+  jobs: Job[]
+}
+
+export function TrackerPage({ jobs }: TrackerPageProps) {
   return (
     <section className="tracker-board">
       {statuses.map((status) => {
@@ -18,7 +22,7 @@ export function TrackerPage() {
                 <div className="tracker-card" key={job.id}>
                   <strong>{job.role}</strong>
                   <span>{job.company}</span>
-                  <small>{job.match}% match - {job.firstSeen}</small>
+                  <small>{job.firstSeen}</small>
                 </div>
               ))}
               {statusJobs.length === 0 && (

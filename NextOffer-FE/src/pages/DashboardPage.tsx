@@ -7,30 +7,33 @@ import { ResumePanel } from '../components/ResumePanel'
 import type { Job, View } from '../types'
 
 type DashboardPageProps = {
+  jobs: Job[]
   selectedJob: Job
   onSelectJob: (id: string) => void
   onNavigate: (view: View) => void
 }
 
-export function DashboardPage({ selectedJob, onSelectJob, onNavigate }: DashboardPageProps) {
+export function DashboardPage({ jobs, selectedJob, onSelectJob, onNavigate }: DashboardPageProps) {
+  const newJobs = jobs.filter((job) => job.status === 'New').length
+
   return (
     <>
       <section className="metric-grid" aria-label="Application summary">
-        <Metric label="Open roles" value="24" detail="+6 from watched companies" />
-        <Metric label="High matches" value="8" detail="80% and above" />
-        <Metric label="Tailored resumes" value="12" detail="3 pending review" />
-        <Metric label="Applications" value="5" detail="2 follow-ups due" />
+        <Metric label="Discovered jobs" value={String(jobs.length)} detail="From watched companies" />
+        <Metric label="New roles" value={String(newJobs)} detail="Not yet reviewed" />
+        <Metric label="Tailored resumes" value="0" detail="Resume API coming next" />
+        <Metric label="Applications" value="0" detail="Tracker API coming next" />
       </section>
 
       <section className="content-grid">
         <article className="panel job-panel">
           <PanelHeader title="Recommended jobs" action="View all" onAction={() => onNavigate('jobs')} />
-          <JobList selectedJobId={selectedJob.id} onSelectJob={onSelectJob} compact />
+          <JobList jobs={jobs} selectedJobId={selectedJob.id} onSelectJob={onSelectJob} compact />
         </article>
 
         <JobDetailPanel job={selectedJob} />
         <ResumePanel />
-        <ActivityPanel />
+        <ActivityPanel jobs={jobs} />
       </section>
     </>
   )

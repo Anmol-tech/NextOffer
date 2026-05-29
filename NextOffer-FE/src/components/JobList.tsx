@@ -1,13 +1,18 @@
-import { jobs } from '../data/mockData'
+import type { Job } from '../types'
 
 type JobListProps = {
+  jobs: Job[]
   selectedJobId: string
   onSelectJob: (id: string) => void
   compact?: boolean
 }
 
-export function JobList({ selectedJobId, onSelectJob, compact = false }: JobListProps) {
+export function JobList({ jobs, selectedJobId, onSelectJob, compact = false }: JobListProps) {
   const visibleJobs = compact ? jobs.slice(0, 3) : jobs
+
+  if (visibleJobs.length === 0) {
+    return <p className="empty-state">No jobs yet. Add a company watch and poll for openings.</p>
+  }
 
   return (
     <div className="job-list">
@@ -24,7 +29,7 @@ export function JobList({ selectedJobId, onSelectJob, compact = false }: JobList
           </div>
           <div className="job-meta">
             <span className={`status status-${job.status.toLowerCase()}`}>{job.status}</span>
-            <strong>{job.match}%</strong>
+            {job.match > 0 && <strong>{job.match}%</strong>}
           </div>
         </button>
       ))}

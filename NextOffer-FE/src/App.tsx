@@ -1,22 +1,40 @@
 import { useMemo, useState } from 'react'
-import { jobs, navItems } from './data/mockData'
+import { navItems } from './data/mockData'
+import { useAppData } from './context/AppDataContext'
+import { useAuth } from './context/AuthContext'
+import { AuthScreen } from './pages/AuthScreen'
 import { DashboardPage } from './pages/DashboardPage'
 import { JobsPage } from './pages/JobsPage'
 import { ResumesPage } from './pages/ResumesPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { TrackerPage } from './pages/TrackerPage'
-import type { View } from './types'
+import type { Job, View } from './types'
 import './App.css'
 
 function App() {
+  const { user, loading: authLoading, logout } = useAuth()
+  const { jobs, loading: dataLoading, error } = useAppData()
   const [activeView, setActiveView] = useState<View>('dashboard')
-  const [selectedJobId, setSelectedJobId] = useState(jobs[0].id)
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
 
-  const selectedJob = useMemo(
-    () => jobs.find((job) => job.id === selectedJobId) ?? jobs[0],
-    [selectedJobId],
-  )
+  const selectedJob = useMemo(() => {
+    if (jobs.length === 0) {
+      return emptyJob()
+    }
+    return jobs.find((job) => job.id === selectedJobId) ?? jobs[0]
+  }, [jobs, selectedJobId])
+
+  if (authLoading) {
+    return (
+      <main className="auth-shell">
+        <p className="loading-state">Loading session…</p>
+      </main>
+    )
+  }
+
+  if (!user) {
+    return <AuthScreen />
+  }
 
   return (
     <main className="app-shell">
@@ -44,8 +62,15 @@ function App() {
         </nav>
 
         <div className="sidebar-panel">
-          <span className="eyebrow">Backend handoff</span>
-          <p>Mock data only. API boundaries are grouped in auth, jobs, resumes, and tracker surfaces.</p>
+          <span className="eyebrow">Signed in</span>
+          <p>
+            <strong>{user.fullName}</strong>
+            <br />
+            {user.email}
+          </p>
+          <button className="ghost-button sidebar-logout" onClick={logout} type="button">
+            Sign out
+          </button>
         </div>
       </aside>
 
@@ -56,29 +81,59 @@ function App() {
             <h1>{pageTitle(activeView)}</h1>
           </div>
           <div className="topbar-actions">
-            <button className="ghost-button" type="button" onClick={() => setActiveView('resumes')}>
-              Upload resume
+            <button className="ghost-button" type="button" onClick={() => setActiveView('settings')}>
+              Manage watches
             </button>
-            <button className="primary-button" type="button" onClick={() => setActiveView('resumes')}>
-              Tailor resume
+            <button className="primary-button" type="button" onClick={() => setActiveView('jobs')}>
+              View jobs
             </button>
           </div>
         </header>
 
+        {(dataLoading || error) && (
+          <div className={`banner ${error ? 'banner-error' : ''}`}>
+            {error ?? 'Syncing jobs and company watches…'}
+          </div>
+        )}
+
         {activeView === 'dashboard' && (
-          <DashboardPage selectedJob={selectedJob} onSelectJob={setSelectedJobId} onNavigate={setActiveView} />
+          <DashboardPage
+            jobs={jobs}
+            selectedJob={selectedJob}
+            onSelectJob={setSelectedJobId}
+            onNavigate={setActiveView}
+          />
         )}
         {activeView === 'jobs' && (
-          <JobsPage selectedJob={selectedJob} selectedJobId={selectedJobId} onSelectJob={setSelectedJobId} />
+          <JobsPage
+            jobs={jobs}
+            selectedJob={selectedJob}
+            selectedJobId={selectedJob.id}
+            onSelectJob={setSelectedJobId}
+          />
         )}
         {activeView === 'resumes' && <ResumesPage selectedJob={selectedJob} />}
-        {activeView === 'tracker' && <TrackerPage />}
-        {activeView === 'settings' && (
-          <SettingsPage authMode={authMode} onAuthModeChange={setAuthMode} />
-        )}
+        {activeView === 'tracker' && <TrackerPage jobs={jobs} />}
+        {activeView === 'settings' && <SettingsPage />}
       </section>
     </main>
   )
+}
+
+function emptyJob(): Job {
+  return {
+    id: 'empty',
+    company: 'No company',
+    role: 'Add a company watch to discover jobs',
+    location: '—',
+    match: 0,
+    status: 'New',
+    firstSeen: '—',
+    applyUrl: '#',
+    salary: '—',
+    stack: [],
+    highlights: ['Create a company watch in Settings, then poll or wait for the observer.'],
+  }
 }
 
 function pageTitle(view: View) {
@@ -90,7 +145,7 @@ function pageTitle(view: View) {
     case 'tracker':
       return 'Move each application through a simple, visible pipeline.'
     case 'settings':
-      return 'Prepare auth and API integration without calling the backend yet.'
+      return 'Manage company watches and account settings.'
     default:
       return 'Track roles, tailor resumes, and move faster.'
   }

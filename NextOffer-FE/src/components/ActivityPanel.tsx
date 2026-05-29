@@ -1,14 +1,22 @@
-import { activity } from '../data/mockData'
 import { PanelHeader } from './PanelHeader'
+import type { Job } from '../types'
 
-export function ActivityPanel() {
+type ActivityPanelProps = {
+  jobs: Job[]
+}
+
+export function ActivityPanel({ jobs }: ActivityPanelProps) {
+  const activity = jobs.slice(0, 4).map((job) => `${job.company}: ${job.role} discovered.`)
+
   return (
     <article className="panel activity-panel">
-      <PanelHeader title="Recent activity" action="Timeline" />
+      <PanelHeader title="Recent activity" action="Live feed" />
       <div className="activity-list">
-        {activity.map((item) => (
-          <p key={item}>{item}</p>
-        ))}
+        {activity.length > 0 ? (
+          activity.map((item) => <p key={item}>{item}</p>)
+        ) : (
+          <p className="empty-state">Activity will appear after jobs are discovered.</p>
+        )}
       </div>
     </article>
   )
