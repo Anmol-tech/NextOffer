@@ -9,6 +9,9 @@ public record CreateCompanyWatchRequest(
         @NotBlank @Size(max = 2048) String careerPageUrl,
         @Size(max = 128) String boardToken,
         AtsType atsType,
-        Boolean enabled
+        Boolean enabled,
+        @Size(max = 512) String locationFilter,
+        @Size(max = 512) String keywordFilter,
+        @Size(max = 512) String departmentFilter
 ) {
 }

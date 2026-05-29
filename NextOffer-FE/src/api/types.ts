@@ -17,6 +17,9 @@ export type CompanyWatch = {
   boardToken: string | null
   atsType: 'GREENHOUSE' | 'LEVER' | 'CUSTOM_HTML'
   enabled: boolean
+  locationFilter: string | null
+  keywordFilter: string | null
+  departmentFilter: string | null
   lastCheckedAt: string | null
   lastScanStatus: 'SUCCESS' | 'FAILED' | null
   lastErrorMessage: string | null
@@ -41,6 +44,20 @@ export type CreateWatchRequest = {
   boardToken?: string
   atsType?: CompanyWatch['atsType']
   enabled?: boolean
+  locationFilter?: string
+  keywordFilter?: string
+  departmentFilter?: string
+}
+
+export type UpdateWatchRequest = {
+  companyName?: string
+  careerPageUrl?: string
+  boardToken?: string
+  atsType?: CompanyWatch['atsType']
+  enabled?: boolean
+  locationFilter?: string
+  keywordFilter?: string
+  departmentFilter?: string
 }
 
 export type ApiProblem = {

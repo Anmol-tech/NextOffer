@@ -58,6 +58,18 @@ public class CompanyWatch {
     @Column(length = 1024)
     private String lastErrorMessage;
 
+    /** Comma-separated location terms; job location must contain at least one (case-insensitive). */
+    @Column(length = 512)
+    private String locationFilter;
+
+    /** Comma-separated keywords; job title or description must contain at least one. */
+    @Column(length = 512)
+    private String keywordFilter;
+
+    /** Comma-separated department terms; department, title, or description must contain at least one. */
+    @Column(length = 512)
+    private String departmentFilter;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 

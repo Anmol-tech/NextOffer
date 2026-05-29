@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { CompanyWatch, CreateWatchRequest } from './types'
+import type { CompanyWatch, CreateWatchRequest, UpdateWatchRequest } from './types'
 
 export async function listWatches() {
   return apiFetch<CompanyWatch[]>('/api/watches')
@@ -8,6 +8,13 @@ export async function listWatches() {
 export async function createWatch(body: CreateWatchRequest) {
   return apiFetch<CompanyWatch>('/api/watches', {
     method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export async function updateWatch(id: number, body: UpdateWatchRequest) {
+  return apiFetch<CompanyWatch>(`/api/watches/${id}`, {
+    method: 'PUT',
     body: JSON.stringify(body),
   })
 }

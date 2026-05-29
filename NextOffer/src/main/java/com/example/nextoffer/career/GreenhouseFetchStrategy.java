@@ -9,6 +9,7 @@ import org.springframework.web.client.RestClient;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class GreenhouseFetchStrategy implements CareerPageFetchStrategy {
 
@@ -54,7 +55,8 @@ public class GreenhouseFetchStrategy implements CareerPageFetchStrategy {
                         job.locationName(),
                         job.absoluteUrl() != null ? job.absoluteUrl() : careerPageUrl,
                         job.content() != null ? job.content() : "",
-                        Instant.now()
+                        Instant.now(),
+                        job.departmentNames()
                 ))
                 .toList();
     }
@@ -69,14 +71,29 @@ public class GreenhouseFetchStrategy implements CareerPageFetchStrategy {
             String title,
             @JsonProperty("absolute_url") String absoluteUrl,
             String content,
-            GreenhouseLocation location
+            GreenhouseLocation location,
+            List<GreenhouseDepartment> departments
     ) {
         String locationName() {
             return location != null && location.name() != null ? location.name() : "Unspecified";
+        }
+
+        String departmentNames() {
+            if (departments == null || departments.isEmpty()) {
+                return "";
+            }
+            return departments.stream()
+                    .map(GreenhouseDepartment::name)
+                    .filter(name -> name != null && !name.isBlank())
+                    .collect(Collectors.joining(", "));
         }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record GreenhouseLocation(String name) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record GreenhouseDepartment(String name) {
     }
 }

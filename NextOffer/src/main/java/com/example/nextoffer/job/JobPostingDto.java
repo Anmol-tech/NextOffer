@@ -12,6 +12,17 @@ public record JobPostingDto(
         String location,
         String applyUrl,
         String description,
-        Instant firstSeenAt
+        Instant firstSeenAt,
+        String department
 ) {
+    public JobPostingDto(
+            String externalId,
+            String companyName,
+            String title,
+            String location,
+            String applyUrl,
+            String description,
+            Instant firstSeenAt) {
+        this(externalId, companyName, title, location, applyUrl, description, firstSeenAt, null);
+    }
 }

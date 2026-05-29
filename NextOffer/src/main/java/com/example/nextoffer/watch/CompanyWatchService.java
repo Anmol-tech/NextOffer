@@ -46,6 +46,7 @@ public class CompanyWatchService {
         if (request.enabled() != null) {
             watch.setEnabled(request.enabled());
         }
+        applyFilters(watch, request.locationFilter(), request.keywordFilter(), request.departmentFilter());
         return CompanyWatchResponse.from(companyWatchRepository.save(watch));
     }
 
@@ -67,7 +68,29 @@ public class CompanyWatchService {
         if (request.enabled() != null) {
             watch.setEnabled(request.enabled());
         }
+        if (request.locationFilter() != null) {
+            watch.setLocationFilter(normalizeFilter(request.locationFilter()));
+        }
+        if (request.keywordFilter() != null) {
+            watch.setKeywordFilter(normalizeFilter(request.keywordFilter()));
+        }
+        if (request.departmentFilter() != null) {
+            watch.setDepartmentFilter(normalizeFilter(request.departmentFilter()));
+        }
         return CompanyWatchResponse.from(companyWatchRepository.save(watch));
+    }
+
+    private static void applyFilters(CompanyWatch watch, String location, String keywords, String department) {
+        watch.setLocationFilter(normalizeFilter(location));
+        watch.setKeywordFilter(normalizeFilter(keywords));
+        watch.setDepartmentFilter(normalizeFilter(department));
+    }
+
+    private static String normalizeFilter(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 
     @Transactional

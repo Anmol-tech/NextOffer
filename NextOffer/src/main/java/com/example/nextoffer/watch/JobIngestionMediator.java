@@ -32,7 +32,7 @@ public class JobIngestionMediator {
             Set<String> knownExternalIds,
             boolean notifyListeners) {
         CareerPageFetchStrategy strategy = strategyFactory.forAtsType(watch.getAtsType());
-        List<JobPostingDto> fetched = strategy.fetchForWatch(watch);
+        List<JobPostingDto> fetched = JobWatchFilter.apply(watch, strategy.fetchForWatch(watch));
         List<JobPostingDto> newJobs = new ArrayList<>();
 
         for (JobPostingDto posting : fetched) {

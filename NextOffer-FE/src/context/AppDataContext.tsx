@@ -32,7 +32,15 @@ type AppDataContextValue = {
   generateResumeForJob: (jobId: number) => Promise<TailoredResumeSummary>
   downloadResume: (id: number, format?: 'pdf' | 'latex') => Promise<void>
   compileResumePdf: (id: number) => Promise<TailoredResumeDetail>
-  addWatch: (companyName: string, careerPageUrl: string) => Promise<void>
+  addWatch: (
+    companyName: string,
+    careerPageUrl: string,
+    filters?: { locationFilter?: string; keywordFilter?: string; departmentFilter?: string },
+  ) => Promise<void>
+  updateWatchFilters: (
+    id: number,
+    filters: { locationFilter?: string; keywordFilter?: string; departmentFilter?: string },
+  ) => Promise<void>
   removeWatch: (id: number) => Promise<void>
   pollWatch: (id: number) => Promise<number>
   pollAllWatches: () => Promise<void>
@@ -155,12 +163,34 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, [refreshResumes])
 
   const addWatch = useCallback(
-    async (companyName: string, careerPageUrl: string) => {
+    async (
+      companyName: string,
+      careerPageUrl: string,
+      filters?: { locationFilter?: string; keywordFilter?: string; departmentFilter?: string },
+    ) => {
       await watchesApi.createWatch({
         companyName,
         careerPageUrl,
         atsType: 'GREENHOUSE',
         enabled: true,
+        locationFilter: filters?.locationFilter?.trim() || undefined,
+        keywordFilter: filters?.keywordFilter?.trim() || undefined,
+        departmentFilter: filters?.departmentFilter?.trim() || undefined,
+      })
+      await loadAll()
+    },
+    [loadAll],
+  )
+
+  const updateWatchFilters = useCallback(
+    async (
+      id: number,
+      filters: { locationFilter?: string; keywordFilter?: string; departmentFilter?: string },
+    ) => {
+      await watchesApi.updateWatch(id, {
+        locationFilter: filters.locationFilter?.trim() ?? '',
+        keywordFilter: filters.keywordFilter?.trim() ?? '',
+        departmentFilter: filters.departmentFilter?.trim() ?? '',
       })
       await loadAll()
     },
@@ -212,6 +242,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       downloadResume,
       compileResumePdf,
       addWatch,
+      updateWatchFilters,
       removeWatch,
       pollWatch,
       pollAllWatches,
@@ -234,6 +265,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       downloadResume,
       compileResumePdf,
       addWatch,
+      updateWatchFilters,
       removeWatch,
       pollWatch,
       pollAllWatches,

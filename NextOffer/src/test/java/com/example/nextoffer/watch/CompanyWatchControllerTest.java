@@ -3,6 +3,7 @@ package com.example.nextoffer.watch;
 import com.example.nextoffer.career.CareerPageFetchStrategy;
 import com.example.nextoffer.career.CareerPageFetchStrategyFactory;
 import com.example.nextoffer.job.JobPostingDto;
+import com.example.nextoffer.watch.CompanyWatch;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,74 @@ class CompanyWatchControllerTest {
                 ));
             }
         });
+    }
+
+    @Test
+    void pollAppliesLocationAndKeywordFilters() throws Exception {
+        when(strategyFactory.forAtsType(any())).thenReturn(new CareerPageFetchStrategy() {
+            @Override
+            public List<JobPostingDto> fetch(String careerPageUrl) {
+                return fetchForWatch(null);
+            }
+
+            @Override
+            public List<JobPostingDto> fetchForWatch(CompanyWatch watch) {
+                return List.of(
+                        new JobPostingDto(
+                                "gh-nyc",
+                                "Stripe",
+                                "Sales Representative",
+                                "New York, NY",
+                                "https://example.com/nyc",
+                                "enterprise sales",
+                                Instant.now(),
+                                "Sales"
+                        ),
+                        new JobPostingDto(
+                                "gh-sf",
+                                "Stripe",
+                                "Treasury Operations Specialist",
+                                "San Francisco, CA",
+                                "https://example.com/sf",
+                                "treasury and payments",
+                                Instant.now(),
+                                "Operations"
+                        )
+                );
+            }
+        });
+
+        String token = registerAndLogin();
+
+        String createBody = """
+                {
+                  "companyName": "Stripe",
+                  "careerPageUrl": "https://boards.greenhouse.io/stripe",
+                  "atsType": "GREENHOUSE",
+                  "locationFilter": "San Francisco",
+                  "keywordFilter": "treasury"
+                }
+                """;
+
+        String watchJson = mockMvc.perform(post("/api/watches")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.locationFilter").value("San Francisco"))
+                .andExpect(jsonPath("$.keywordFilter").value("treasury"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Number watchIdNumber = JsonPath.read(watchJson, "$.id");
+        long watchId = watchIdNumber.longValue();
+
+        mockMvc.perform(post("/api/watches/" + watchId + "/poll")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.newJobsCount").value(1))
+                .andExpect(jsonPath("$.newJobs[0].title").value("Treasury Operations Specialist"));
     }
 
     @Test
