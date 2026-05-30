@@ -6,12 +6,16 @@ import { ResumeViewer } from '../components/ResumeViewer'
 import { latestTailoredForJob, type ResumeViewerTarget } from '../lib/resumeViewer'
 import type { Job } from '../types'
 
-const STEPS = [
-  'Parse base resume',
-  'Extract job signals',
-  'Rewrite relevant bullets',
-  'Render LaTeX PDF',
+const STEPS: Array<{ title: string; detail: string }> = [
+  { title: 'Parse base resume', detail: 'Read skills, projects, and experience.' },
+  { title: 'Extract job signals', detail: 'Identify role requirements from the selected job.' },
+  { title: 'Rewrite bullets', detail: 'Prioritize relevant, proven experience.' },
+  { title: 'Render PDF', detail: 'Export an ATS-friendly LaTeX resume.' },
 ] as const
+
+function statusClassName(status: string) {
+  return `tailor-status tailor-status-${status.toLowerCase().replaceAll(/[^a-z0-9]+/g, '-')}`
+}
 
 export function ResumesPage({ selectedJob }: { selectedJob: Job }) {
   const { baseResume, tailoredResumes, generatingJobId, generateResumeForJob } = useAppData()
@@ -37,7 +41,7 @@ export function ResumesPage({ selectedJob }: { selectedJob: Job }) {
   const stepStates = [
     baseResume ? 'Complete' : 'Add base resume',
     isValidJob ? 'Complete' : 'Select a job',
-    isGenerating ? 'Running…' : existing ? 'Complete' : baseResume && isValidJob ? 'Ready' : 'Waiting',
+    isGenerating ? 'Running' : existing ? 'Complete' : baseResume && isValidJob ? 'Ready' : 'Waiting',
     existing
       ? existing.outputStatus === 'PDF_READY'
         ? 'Complete'
@@ -69,34 +73,39 @@ export function ResumesPage({ selectedJob }: { selectedJob: Job }) {
 
   return (
     <section className="content-grid resume-layout">
-      <article className="panel">
+      <article className="panel workflow-panel">
         <PanelHeader
           title="Tailoring workflow"
-          action={isGenerating ? 'Generating…' : 'Run for selected job'}
+          action={isGenerating ? 'Generating...' : 'Run for selected job'}
           onAction={() => void handleGenerate()}
         />
         {error && <p className="inline-message inline-message-error">{error}</p>}
         {message && <p className="inline-message">{message}</p>}
         <div className="tailor-steps">
           {STEPS.map((step, index) => (
-            <div className="tailor-step" key={step}>
-              <span>{index + 1}</span>
-              <strong>{step}</strong>
-              <p>{stepStates[index]}</p>
+            <div className="tailor-step" key={step.title}>
+              <span className="tailor-step-number">{index + 1}</span>
+              <div>
+                <div className="tailor-step-heading">
+                  <strong>{step.title}</strong>
+                  <small className={statusClassName(stepStates[index])}>{stepStates[index]}</small>
+                </div>
+                <p>{step.detail}</p>
+              </div>
             </div>
           ))}
         </div>
-        <div className="comparison-grid">
-          <div>
+        <div className="workflow-context">
+          <div className="workflow-job-card">
             <span className="eyebrow">Selected job</span>
-            <h2>{selectedJob.role}</h2>
+            <h3>{selectedJob.role}</h3>
             <p>
-              {selectedJob.company} — {selectedJob.location}
+              {selectedJob.company} - {selectedJob.location}
             </p>
           </div>
-          <div>
+          <div className="workflow-guard-card">
             <span className="eyebrow">No fabrication guard</span>
-            <h2>Only reorder and rewrite proven experience</h2>
+            <h3>Grounded edits only</h3>
             <p>Generated bullets stay anchored to the base resume content.</p>
           </div>
         </div>

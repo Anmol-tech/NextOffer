@@ -13,9 +13,10 @@ export function TrackerPage({ jobs }: TrackerPageProps) {
     <section className="tracker-board">
       {statuses.map((status) => {
         const statusJobs = jobs.filter((job) => job.status === status)
+        const hasJobs = statusJobs.length > 0
 
         return (
-          <article className="panel tracker-column" key={status}>
+          <article className={`panel tracker-column${hasJobs ? ' tracker-column-has-items' : ''}`} key={status}>
             <PanelHeader title={status} action={`${statusJobs.length}`} />
             <div className="tracker-list">
               {statusJobs.map((job) => (

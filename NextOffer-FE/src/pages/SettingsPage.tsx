@@ -15,6 +15,13 @@ const emptyFilters = (): WatchFilterForm => ({
   departmentFilter: '',
 })
 
+const apiGroups = [
+  { label: 'Auth', value: 'Register, login, and current user' },
+  { label: 'Watches', value: 'Create, update, poll, and delete company watches' },
+  { label: 'Jobs', value: 'List matched jobs and inspect details' },
+  { label: 'Resumes', value: 'Base resume, tailoring, PDF, and LaTeX export' },
+]
+
 function filtersFromWatch(watch: CompanyWatch): WatchFilterForm {
   return {
     locationFilter: watch.locationFilter ?? '',
@@ -34,7 +41,14 @@ function formatActiveFilters(watch: CompanyWatch) {
   if (watch.departmentFilter) {
     parts.push(`Department: ${watch.departmentFilter}`)
   }
-  return parts.length > 0 ? parts.join(' · ') : 'No filters (all jobs)'
+  return parts.length > 0 ? parts.join(' | ') : 'No filters'
+}
+
+function formatLastScan(watch: CompanyWatch) {
+  if (!watch.lastCheckedAt) {
+    return 'Never scanned'
+  }
+  return `Last scan ${new Date(watch.lastCheckedAt).toLocaleString()}`
 }
 
 export function SettingsPage() {
@@ -116,83 +130,103 @@ export function SettingsPage() {
 
   return (
     <section className="content-grid settings-layout">
-      <article className="panel integration-panel">
+      <article className="panel settings-watch-panel">
         <PanelHeader title="Company watches" action={`${watches.length} active`} />
-        <p className="panel-copy">
-          Add target companies. Optional filters limit which jobs are saved — use comma-separated
-          values for location, keywords (title/description), and department.
-        </p>
 
-        <form className="watch-form" onSubmit={handleAddWatch}>
-          <label>
-            Company name
-            <input
-              placeholder="Stripe"
-              value={companyName}
-              onChange={(event) => setCompanyName(event.target.value)}
-              required
-            />
-          </label>
-          <label>
-            Career page URL
-            <input
-              placeholder="https://boards.greenhouse.io/stripe"
-              value={careerPageUrl}
-              onChange={(event) => setCareerPageUrl(event.target.value)}
-              required
-            />
-          </label>
-          <fieldset className="watch-filter-fieldset">
-            <legend>Job filters (optional)</legend>
+        <form className="watch-form watch-form-card" onSubmit={handleAddWatch}>
+          <div className="watch-form-header">
+            <div>
+              <span className="eyebrow">New watch</span>
+              <h3>Add a career page</h3>
+            </div>
+            <button className="primary-button" disabled={submitting} type="submit">
+              {submitting ? 'Adding...' : 'Add watch'}
+            </button>
+          </div>
+
+          <div className="watch-form-primary">
             <label>
-              Locations
+              Company
               <input
-                placeholder="San Francisco, Remote, New York"
-                value={newFilters.locationFilter}
-                onChange={(event) =>
-                  setNewFilters((current) => ({ ...current, locationFilter: event.target.value }))
-                }
+                placeholder="Stripe"
+                value={companyName}
+                onChange={(event) => setCompanyName(event.target.value)}
+                required
               />
             </label>
             <label>
-              Keywords
+              Career page URL
               <input
-                placeholder="treasury, backend, intern"
-                value={newFilters.keywordFilter}
-                onChange={(event) =>
-                  setNewFilters((current) => ({ ...current, keywordFilter: event.target.value }))
-                }
+                placeholder="https://boards.greenhouse.io/stripe"
+                value={careerPageUrl}
+                onChange={(event) => setCareerPageUrl(event.target.value)}
+                required
               />
             </label>
-            <label>
-              Departments
-              <input
-                placeholder="Engineering, Product, Operations"
-                value={newFilters.departmentFilter}
-                onChange={(event) =>
-                  setNewFilters((current) => ({ ...current, departmentFilter: event.target.value }))
-                }
-              />
-            </label>
-          </fieldset>
-          <button className="primary-button" disabled={submitting} type="submit">
-            {submitting ? 'Adding…' : 'Add watch'}
-          </button>
+          </div>
+
+          <details className="watch-filter-details">
+            <summary>Optional filters</summary>
+            <div className="watch-filter-grid">
+              <label>
+                Locations
+                <input
+                  placeholder="San Francisco, Remote"
+                  value={newFilters.locationFilter}
+                  onChange={(event) =>
+                    setNewFilters((current) => ({ ...current, locationFilter: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Keywords
+                <input
+                  placeholder="backend, intern"
+                  value={newFilters.keywordFilter}
+                  onChange={(event) =>
+                    setNewFilters((current) => ({ ...current, keywordFilter: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                Departments
+                <input
+                  placeholder="Engineering, Product"
+                  value={newFilters.departmentFilter}
+                  onChange={(event) =>
+                    setNewFilters((current) => ({ ...current, departmentFilter: event.target.value }))
+                  }
+                />
+              </label>
+            </div>
+          </details>
         </form>
 
         {message && <p className="inline-message">{message}</p>}
         {error && <p className="form-error">{error}</p>}
 
+        <div className="settings-section-header">
+          <div>
+            <span className="eyebrow">Saved watches</span>
+            <h3>Career pages being monitored</h3>
+          </div>
+        </div>
+
         <div className="watch-list">
           {watches.map((watch) => (
             <div className="watch-row" key={watch.id}>
               <div className="watch-row-main">
-                <strong>{watch.companyName}</strong>
+                <div className="watch-row-title">
+                  <strong>{watch.companyName}</strong>
+                  <span className={`status status-${watch.enabled ? 'applied' : 'rejected'}`}>
+                    {watch.enabled ? 'Active' : 'Paused'}
+                  </span>
+                </div>
                 <span>{watch.careerPageUrl}</span>
                 <small className="watch-filter-summary">{formatActiveFilters(watch)}</small>
                 <small>
-                  Last scan: {watch.lastCheckedAt ? new Date(watch.lastCheckedAt).toLocaleString() : 'Never'}
-                  {watch.lastScanStatus ? ` · ${watch.lastScanStatus}` : ''}
+                  {formatLastScan(watch)}
+                  {watch.lastScanStatus ? ` | ${watch.lastScanStatus}` : ''}
                 </small>
 
                 {editingId === watch.id && (
@@ -240,13 +274,9 @@ export function SettingsPage() {
                         onClick={() => void handleSaveFilters(watch.id)}
                         type="button"
                       >
-                        {savingFiltersId === watch.id ? 'Saving…' : 'Save filters'}
+                        {savingFiltersId === watch.id ? 'Saving...' : 'Save filters'}
                       </button>
-                      <button
-                        className="ghost-button"
-                        onClick={() => setEditingId(null)}
-                        type="button"
-                      >
+                      <button className="ghost-button" onClick={() => setEditingId(null)} type="button">
                         Cancel
                       </button>
                     </div>
@@ -260,10 +290,10 @@ export function SettingsPage() {
                   onClick={() => void handlePoll(watch)}
                   type="button"
                 >
-                  {pollingId === watch.id ? 'Polling…' : 'Poll now'}
+                  {pollingId === watch.id ? 'Polling...' : 'Poll'}
                 </button>
                 <button className="ghost-button" onClick={() => startEditFilters(watch)} type="button">
-                  Edit filters
+                  Filters
                 </button>
                 <button className="ghost-button" onClick={() => void handleRemove(watch.id)} type="button">
                   Remove
@@ -275,15 +305,33 @@ export function SettingsPage() {
         </div>
       </article>
 
-      <article className="panel integration-panel">
-        <PanelHeader title="Connected APIs" action="Live" />
-        <ul className="integration-list">
-          <li>POST /api/auth/register, /api/auth/login, GET /api/auth/me</li>
-          <li>GET/POST/PUT/DELETE /api/watches and POST /api/watches/:id/poll</li>
-          <li>GET /api/jobs and GET /api/jobs/:id</li>
-          <li>Resume tailoring and tracker endpoints are still mock-only in the UI.</li>
-        </ul>
-      </article>
+      <aside className="settings-side-panel">
+        <article className="panel settings-summary-panel">
+          <PanelHeader title="Workspace status" action="Live" />
+          <div className="settings-summary-grid">
+            <div>
+              <span>Company watches</span>
+              <strong>{watches.length}</strong>
+            </div>
+            <div>
+              <span>Polling source</span>
+              <strong>Backend</strong>
+            </div>
+          </div>
+        </article>
+
+        <article className="panel integration-panel">
+          <PanelHeader title="Connected APIs" />
+          <ul className="integration-list integration-list-compact">
+            {apiGroups.map((group) => (
+              <li key={group.label}>
+                <strong>{group.label}</strong>
+                <span>{group.value}</span>
+              </li>
+            ))}
+          </ul>
+        </article>
+      </aside>
     </section>
   )
 }
