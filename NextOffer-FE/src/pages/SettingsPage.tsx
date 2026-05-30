@@ -9,6 +9,31 @@ type WatchFilterForm = {
   departmentFilter: string
 }
 
+type AtsOption = { value: CompanyWatch['atsType']; label: string; placeholder: string }
+
+const ATS_OPTIONS: AtsOption[] = [
+  {
+    value: 'GREENHOUSE',
+    label: 'Greenhouse',
+    placeholder: 'https://boards.greenhouse.io/stripe',
+  },
+  {
+    value: 'WORKDAY',
+    label: 'Workday',
+    placeholder: 'https://amazon.wd5.myworkdayjobs.com/en-US/amazon-jobs',
+  },
+  {
+    value: 'LEVER',
+    label: 'Lever',
+    placeholder: 'https://jobs.lever.co/company',
+  },
+  {
+    value: 'CUSTOM_HTML',
+    label: 'Custom HTML',
+    placeholder: 'https://company.com/careers',
+  },
+]
+
 const emptyFilters = (): WatchFilterForm => ({
   locationFilter: '',
   keywordFilter: '',
@@ -54,6 +79,7 @@ function formatLastScan(watch: CompanyWatch) {
 export function SettingsPage() {
   const { watches, addWatch, updateWatchFilters, removeWatch, pollWatch } = useAppData()
   const [companyName, setCompanyName] = useState('')
+  const [atsType, setAtsType] = useState<CompanyWatch['atsType']>('GREENHOUSE')
   const [careerPageUrl, setCareerPageUrl] = useState('https://boards.greenhouse.io/stripe')
   const [newFilters, setNewFilters] = useState<WatchFilterForm>(emptyFilters)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -64,13 +90,20 @@ export function SettingsPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  const selectedAts = ATS_OPTIONS.find((o) => o.value === atsType) ?? ATS_OPTIONS[0]
+
+  function handleAtsChange(value: CompanyWatch['atsType']) {
+    setAtsType(value)
+    setCareerPageUrl('')
+  }
+
   async function handleAddWatch(event: React.FormEvent) {
     event.preventDefault()
     setSubmitting(true)
     setError(null)
     setMessage(null)
     try {
-      await addWatch(companyName, careerPageUrl, newFilters)
+      await addWatch(companyName, careerPageUrl, newFilters, atsType)
       setCompanyName('')
       setNewFilters(emptyFilters())
       setMessage('Company watch added.')
@@ -155,9 +188,22 @@ export function SettingsPage() {
               />
             </label>
             <label>
+              ATS / Job board type
+              <select
+                value={atsType}
+                onChange={(event) => handleAtsChange(event.target.value as CompanyWatch['atsType'])}
+              >
+                {ATS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
               Career page URL
               <input
-                placeholder="https://boards.greenhouse.io/stripe"
+                placeholder={selectedAts.placeholder}
                 value={careerPageUrl}
                 onChange={(event) => setCareerPageUrl(event.target.value)}
                 required
@@ -220,6 +266,9 @@ export function SettingsPage() {
                   <strong>{watch.companyName}</strong>
                   <span className={`status status-${watch.enabled ? 'applied' : 'rejected'}`}>
                     {watch.enabled ? 'Active' : 'Paused'}
+                  </span>
+                  <span className="status">
+                    {ATS_OPTIONS.find((o) => o.value === watch.atsType)?.label ?? watch.atsType}
                   </span>
                 </div>
                 <span>{watch.careerPageUrl}</span>

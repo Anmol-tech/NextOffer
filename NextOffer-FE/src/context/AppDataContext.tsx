@@ -36,6 +36,7 @@ type AppDataContextValue = {
     companyName: string,
     careerPageUrl: string,
     filters?: { locationFilter?: string; keywordFilter?: string; departmentFilter?: string },
+    atsType?: CompanyWatch['atsType'],
   ) => Promise<void>
   updateWatchFilters: (
     id: number,
@@ -167,11 +168,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       companyName: string,
       careerPageUrl: string,
       filters?: { locationFilter?: string; keywordFilter?: string; departmentFilter?: string },
+      atsType: CompanyWatch['atsType'] = 'GREENHOUSE',
     ) => {
       await watchesApi.createWatch({
         companyName,
         careerPageUrl,
-        atsType: 'GREENHOUSE',
+        atsType,
         enabled: true,
         locationFilter: filters?.locationFilter?.trim() || undefined,
         keywordFilter: filters?.keywordFilter?.trim() || undefined,
