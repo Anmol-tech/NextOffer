@@ -15,22 +15,22 @@ const ATS_OPTIONS: AtsOption[] = [
   {
     value: 'GREENHOUSE',
     label: 'Greenhouse',
-    placeholder: 'https://boards.greenhouse.io/stripe',
+    placeholder: 'https://boards.greenhouse.io/your-company',
   },
   {
     value: 'WORKDAY',
     label: 'Workday',
-    placeholder: 'https://amazon.wd5.myworkdayjobs.com/en-US/amazon-jobs',
+    placeholder: 'https://your-company.wd5.myworkdayjobs.com/en-US/career-site',
   },
   {
     value: 'LEVER',
     label: 'Lever',
-    placeholder: 'https://jobs.lever.co/company',
+    placeholder: 'https://jobs.lever.co/your-company',
   },
   {
     value: 'CUSTOM_HTML',
     label: 'Custom HTML',
-    placeholder: 'https://company.com/careers',
+    placeholder: 'https://your-company.com/careers',
   },
 ]
 
@@ -80,7 +80,7 @@ export function SettingsPage() {
   const { watches, addWatch, updateWatchFilters, removeWatch, pollWatch } = useAppData()
   const [companyName, setCompanyName] = useState('')
   const [atsType, setAtsType] = useState<CompanyWatch['atsType']>('GREENHOUSE')
-  const [careerPageUrl, setCareerPageUrl] = useState('https://boards.greenhouse.io/stripe')
+  const [careerPageUrl, setCareerPageUrl] = useState('')
   const [newFilters, setNewFilters] = useState<WatchFilterForm>(emptyFilters)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editFilters, setEditFilters] = useState<WatchFilterForm>(emptyFilters)
@@ -181,7 +181,7 @@ export function SettingsPage() {
             <label>
               Company
               <input
-                placeholder="Stripe"
+                placeholder="Company name"
                 value={companyName}
                 onChange={(event) => setCompanyName(event.target.value)}
                 required

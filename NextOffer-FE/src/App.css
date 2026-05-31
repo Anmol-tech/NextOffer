@@ -1083,8 +1083,12 @@ input {
 
 .watch-form-primary {
   display: grid;
-  grid-template-columns: minmax(180px, 0.45fr) minmax(260px, 1fr);
+  grid-template-columns: minmax(180px, 0.45fr) minmax(200px, 1fr);
   gap: 12px;
+}
+
+.watch-form-primary label:last-child {
+  grid-column: 1 / -1;
 }
 
 .watch-form label {
@@ -1095,7 +1099,8 @@ input {
   font-weight: 750;
 }
 
-.watch-form input {
+.watch-form input,
+.watch-form select {
   width: 100%;
   min-height: 42px;
   border: 1px solid var(--border);
@@ -1103,6 +1108,23 @@ input {
   padding: 0 12px;
   color: var(--text-strong);
   background: #fff;
+  font: inherit;
+  font-size: 14px;
+}
+
+.watch-form input::placeholder {
+  color: #b0b7c3;
+  font-weight: 400;
+}
+
+.watch-form select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+  cursor: pointer;
 }
 
 .watch-filter-details {
