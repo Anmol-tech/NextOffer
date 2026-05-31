@@ -15,7 +15,7 @@ export type CompanyWatch = {
   companyName: string
   careerPageUrl: string
   boardToken: string | null
-  atsType: 'GREENHOUSE' | 'WORKDAY' | 'LEVER' | 'CUSTOM_HTML'
+  atsType: 'GREENHOUSE' | 'WORKDAY' | 'SMART_RECRUITERS' | 'LEVER' | 'CUSTOM_HTML'
   enabled: boolean
   locationFilter: string | null
   keywordFilter: string | null

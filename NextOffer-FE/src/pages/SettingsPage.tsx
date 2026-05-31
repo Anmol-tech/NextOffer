@@ -23,6 +23,11 @@ const ATS_OPTIONS: AtsOption[] = [
     placeholder: 'https://your-company.wd5.myworkdayjobs.com/en-US/career-site',
   },
   {
+    value: 'SMART_RECRUITERS',
+    label: 'SmartRecruiters',
+    placeholder: 'https://jobs.smartrecruiters.com/YourCompany',
+  },
+  {
     value: 'LEVER',
     label: 'Lever',
     placeholder: 'https://jobs.lever.co/your-company',

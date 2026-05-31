@@ -10,6 +10,7 @@ public abstract class CareerPageFetcherFactory {
         return switch (atsType) {
             case GREENHOUSE -> new GreenhouseIntegrationFactory().createFetcher();
             case WORKDAY -> new WorkdayIntegrationFactory().createFetcher();
+            case SMART_RECRUITERS -> new SmartRecruitersIntegrationFactory().createFetcher();
             case LEVER, CUSTOM_HTML -> createCustomFetcher(atsType);
         };
     }

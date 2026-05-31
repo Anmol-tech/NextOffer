@@ -7,6 +7,7 @@ public class DefaultCareerPageFetcherFactory extends CareerPageFetcherFactory {
     protected CareerPageFetcher createCustomFetcher(AtsType atsType) {
         return switch (atsType) {
             case WORKDAY -> new WorkdayIntegrationFactory().createFetcher();
+            case SMART_RECRUITERS -> new SmartRecruitersIntegrationFactory().createFetcher();
             default -> new CachingCareerPageProxy(new GreenhouseFetchStrategy());
         };
     }

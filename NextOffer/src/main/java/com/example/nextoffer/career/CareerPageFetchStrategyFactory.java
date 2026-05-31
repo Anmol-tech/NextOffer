@@ -9,6 +9,7 @@ public class CareerPageFetchStrategyFactory {
         return switch (atsType) {
             case GREENHOUSE -> new GreenhouseFetchStrategy();
             case WORKDAY -> new WorkdayFetchStrategy();
+            case SMART_RECRUITERS -> new SmartRecruitersFetchStrategy();
             case LEVER, CUSTOM_HTML -> new GreenhouseFetchStrategy();
         };
     }
