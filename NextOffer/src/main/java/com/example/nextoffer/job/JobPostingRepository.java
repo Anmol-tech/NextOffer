@@ -1,6 +1,7 @@
 package com.example.nextoffer.job;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -29,4 +30,8 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
             WHERE cw.user.id = :userId AND jp.id = :jobId
             """)
     Optional<JobPosting> findByIdAndUserId(@Param("jobId") Long jobId, @Param("userId") Long userId);
+
+    @Modifying
+    @Query("DELETE FROM JobPosting jp WHERE jp.companyWatch.id = :watchId")
+    void deleteByCompanyWatchId(@Param("watchId") Long watchId);
 }

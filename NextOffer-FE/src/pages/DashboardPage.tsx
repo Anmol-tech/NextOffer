@@ -21,6 +21,7 @@ export function DashboardPage({ jobs, selectedJob, onSelectJob, onNavigate }: Da
   const { tailoredResumes } = useAppData()
   const [viewerTarget, setViewerTarget] = useState<ResumeViewerTarget | null>(null)
   const newJobs = jobs.filter((job) => job.status === 'New').length
+  const appliedJobs = jobs.filter((job) => job.status === 'Applied').length
 
   return (
     <>
@@ -28,13 +29,17 @@ export function DashboardPage({ jobs, selectedJob, onSelectJob, onNavigate }: Da
         <Metric label="Discovered jobs" value={String(jobs.length)} detail="From watched companies" />
         <Metric label="New roles" value={String(newJobs)} detail="Not yet reviewed" />
         <Metric label="Tailored resumes" value={String(tailoredResumes.length)} detail="Job-specific versions" />
-        <Metric label="Applications" value="0" detail="Tracker API coming next" />
+        <Metric label="Applications" value={String(appliedJobs)} detail="Marked as applied in tracker" />
       </section>
 
-      <section className="content-grid">
-        <article className="panel job-panel">
-          <PanelHeader title="Recommended jobs" action="View all" onAction={() => onNavigate('jobs')} />
-          <JobList jobs={jobs} selectedJobId={selectedJob.id} onSelectJob={onSelectJob} compact />
+      <section className="content-grid dashboard-layout layout-fill">
+        <article className="panel job-panel panel-scroll-column">
+          <div className="panel-scroll-header">
+            <PanelHeader title="Recommended jobs" action="View all" onAction={() => onNavigate('jobs')} />
+          </div>
+          <div className="panel-scroll-body">
+            <JobList jobs={jobs} selectedJobId={selectedJob.id} onSelectJob={onSelectJob} compact />
+          </div>
         </article>
 
         <JobDetailPanel job={selectedJob} onViewResume={setViewerTarget} />

@@ -11,8 +11,9 @@ import * as jobsApi from '../api/jobs'
 import * as resumesApi from '../api/resumes'
 import * as watchesApi from '../api/watches'
 import { mapJobPosting } from '../lib/mappers'
+import { toApiApplicationStatus } from '../lib/trackerStatus'
 import type { BaseResume, CompanyWatch, TailoredResumeDetail, TailoredResumeSummary } from '../api/types'
-import type { Job } from '../types'
+import type { Job, JobStatus } from '../types'
 import { useAuth } from './AuthContext'
 
 type AppDataContextValue = {
@@ -45,6 +46,7 @@ type AppDataContextValue = {
   removeWatch: (id: number) => Promise<void>
   pollWatch: (id: number) => Promise<number>
   pollAllWatches: () => Promise<void>
+  updateJobApplicationStatus: (jobId: number, status: JobStatus) => Promise<void>
 }
 
 const AppDataContext = createContext<AppDataContextValue | null>(null)
@@ -225,6 +227,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     await loadAll()
   }, [watches, loadAll])
 
+  const updateJobApplicationStatus = useCallback(async (jobId: number, status: JobStatus) => {
+    const updated = await jobsApi.updateApplicationStatus(jobId, toApiApplicationStatus(status))
+    setJobs((current) =>
+      current.map((job) => (job.id === String(updated.id) ? mapJobPosting(updated) : job)),
+    )
+  }, [])
+
   const value = useMemo(
     () => ({
       jobs,
@@ -248,6 +257,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       removeWatch,
       pollWatch,
       pollAllWatches,
+      updateJobApplicationStatus,
     }),
     [
       jobs,
@@ -271,6 +281,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       removeWatch,
       pollWatch,
       pollAllWatches,
+      updateJobApplicationStatus,
     ],
   )
 

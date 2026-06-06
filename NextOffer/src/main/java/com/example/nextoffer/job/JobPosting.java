@@ -1,8 +1,11 @@
 package com.example.nextoffer.job;
 
+import com.example.nextoffer.tracker.ApplicationStatus;
 import com.example.nextoffer.watch.CompanyWatch;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -54,6 +57,13 @@ public class JobPosting {
 
     @Column(nullable = false, updatable = false)
     private Instant firstSeenAt = Instant.now();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "application_status", nullable = false)
+    private ApplicationStatus applicationStatus = ApplicationStatus.NEW;
+
+    @Column(name = "status_updated_at", nullable = false)
+    private Instant statusUpdatedAt = Instant.now();
 
     public JobPosting(CompanyWatch companyWatch, JobPostingDto dto) {
         this.companyWatch = companyWatch;

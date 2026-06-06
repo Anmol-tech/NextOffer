@@ -56,10 +56,21 @@ public class JobObserverService {
         } catch (Exception ex) {
             watch.setLastCheckedAt(Instant.now());
             watch.setLastScanStatus(ScanStatus.FAILED);
-            watch.setLastErrorMessage(truncate(ex.getMessage(), 1000));
+            watch.setLastErrorMessage(truncate(friendlyMessage(ex), 1000));
             companyWatchRepository.save(watch);
             throw new WatchPollException(watch.getId(), ex);
         }
+    }
+
+    private static String friendlyMessage(Throwable ex) {
+        Throwable current = ex;
+        while (current != null) {
+            if (current.getMessage() != null && !current.getMessage().isBlank()) {
+                return current.getMessage();
+            }
+            current = current.getCause();
+        }
+        return "Unknown error";
     }
 
     private static String truncate(String message, int max) {

@@ -96,6 +96,7 @@ function App() {
           </div>
         )}
 
+        <div className="page-shell">
         {activeView === 'dashboard' && (
           <DashboardPage
             jobs={jobs}
@@ -115,6 +116,7 @@ function App() {
         {activeView === 'resumes' && <ResumesPage selectedJob={selectedJob} />}
         {activeView === 'tracker' && <TrackerPage jobs={jobs} />}
         {activeView === 'settings' && <SettingsPage />}
+        </div>
       </section>
     </main>
   )
@@ -143,7 +145,7 @@ function pageTitle(view: View) {
     case 'resumes':
       return 'Manage base resumes, versions, and tailoring runs.'
     case 'tracker':
-      return 'Move each application through a simple, visible pipeline.'
+      return 'Move roles through your pipeline as you review and apply.'
     case 'settings':
       return 'Manage company watches and account settings.'
     default:

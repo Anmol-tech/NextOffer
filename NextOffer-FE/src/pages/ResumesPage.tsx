@@ -72,41 +72,45 @@ export function ResumesPage({ selectedJob }: { selectedJob: Job }) {
   }
 
   return (
-    <section className="content-grid resume-layout">
-      <article className="panel workflow-panel">
-        <PanelHeader
-          title="Tailoring workflow"
-          action={isGenerating ? 'Generating...' : 'Run for selected job'}
-          onAction={() => void handleGenerate()}
-        />
-        {error && <p className="inline-message inline-message-error">{error}</p>}
-        {message && <p className="inline-message">{message}</p>}
-        <div className="tailor-steps">
-          {STEPS.map((step, index) => (
-            <div className="tailor-step" key={step.title}>
-              <span className="tailor-step-number">{index + 1}</span>
-              <div>
-                <div className="tailor-step-heading">
-                  <strong>{step.title}</strong>
-                  <small className={statusClassName(stepStates[index])}>{stepStates[index]}</small>
-                </div>
-                <p>{step.detail}</p>
-              </div>
-            </div>
-          ))}
+    <section className="content-grid resume-layout layout-fill">
+      <article className="panel workflow-panel panel-scroll-column">
+        <div className="panel-scroll-header">
+          <PanelHeader
+            title="Tailoring workflow"
+            action={isGenerating ? 'Generating...' : 'Run for selected job'}
+            onAction={() => void handleGenerate()}
+          />
+          {error && <p className="inline-message inline-message-error">{error}</p>}
+          {message && <p className="inline-message">{message}</p>}
         </div>
-        <div className="workflow-context">
-          <div className="workflow-job-card">
-            <span className="eyebrow">Selected job</span>
-            <h3>{selectedJob.role}</h3>
-            <p>
-              {selectedJob.company} - {selectedJob.location}
-            </p>
+        <div className="panel-scroll-body">
+          <div className="tailor-steps">
+            {STEPS.map((step, index) => (
+              <div className="tailor-step" key={step.title}>
+                <span className="tailor-step-number">{index + 1}</span>
+                <div>
+                  <div className="tailor-step-heading">
+                    <strong>{step.title}</strong>
+                    <small className={statusClassName(stepStates[index])}>{stepStates[index]}</small>
+                  </div>
+                  <p>{step.detail}</p>
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="workflow-guard-card">
-            <span className="eyebrow">No fabrication guard</span>
-            <h3>Grounded edits only</h3>
-            <p>Generated bullets stay anchored to the base resume content.</p>
+          <div className="workflow-context">
+            <div className="workflow-job-card">
+              <span className="eyebrow">Selected job</span>
+              <h3>{selectedJob.role}</h3>
+              <p>
+                {selectedJob.company} - {selectedJob.location}
+              </p>
+            </div>
+            <div className="workflow-guard-card">
+              <span className="eyebrow">No fabrication guard</span>
+              <h3>Grounded edits only</h3>
+              <p>Generated bullets stay anchored to the base resume content.</p>
+            </div>
           </div>
         </div>
       </article>

@@ -1,5 +1,6 @@
 package com.example.nextoffer.watch;
 
+import com.example.nextoffer.career.CareerPageFetchException;
 import com.example.nextoffer.job.JobPostingNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -23,10 +24,21 @@ public class WatchExceptionHandler {
         return problem;
     }
 
+    @ExceptionHandler(CareerPageFetchException.class)
+    public ProblemDetail handleCareerPageFetch(CareerPageFetchException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Could not load career page");
+        return problem;
+    }
+
     @ExceptionHandler(WatchPollException.class)
     public ProblemDetail handlePollFailed(WatchPollException ex) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, ex.getMessage());
-        problem.setTitle("Career page poll failed");
+        Throwable cause = ex.getCause();
+        if (cause instanceof CareerPageFetchException fetchException) {
+            return handleCareerPageFetch(fetchException);
+        }
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_GATEWAY, friendlyPollMessage(ex));
+        problem.setTitle("Could not check career page");
         return problem;
     }
 
@@ -35,5 +47,15 @@ public class WatchExceptionHandler {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
         problem.setTitle("Invalid request");
         return problem;
+    }
+
+    private static String friendlyPollMessage(WatchPollException ex) {
+        String message = ex.getMessage();
+        if (message != null && message.contains("404") && message.contains("Job not found")) {
+            return """
+                    The career page URL or platform type does not match a valid job board. \
+                    Remove this watch and add it again with the correct platform and main careers URL.""";
+        }
+        return message != null ? message : "Career page check failed.";
     }
 }

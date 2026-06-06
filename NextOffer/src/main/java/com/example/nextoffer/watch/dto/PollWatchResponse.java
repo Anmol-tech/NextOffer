@@ -1,8 +1,10 @@
 package com.example.nextoffer.watch.dto;
 
 import com.example.nextoffer.job.JobPostingResponse;
+import com.example.nextoffer.tracker.ApplicationStatus;
 import com.example.nextoffer.watch.JobObserverService;
 
+import java.time.Instant;
 import java.util.List;
 
 public record PollWatchResponse(Long watchId, int newJobsCount, List<JobPostingResponse> newJobs) {
@@ -18,7 +20,9 @@ public record PollWatchResponse(Long watchId, int newJobsCount, List<JobPostingR
                         dto.location(),
                         dto.applyUrl(),
                         dto.description(),
-                        dto.firstSeenAt()
+                        dto.firstSeenAt(),
+                        ApplicationStatus.NEW,
+                        Instant.now()
                 ))
                 .toList();
         return new PollWatchResponse(result.watchId(), result.newJobsCount(), jobs);

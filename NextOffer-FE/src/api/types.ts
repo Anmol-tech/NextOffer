@@ -26,6 +26,8 @@ export type CompanyWatch = {
   createdAt: string
 }
 
+export type ApplicationStatus = 'NEW' | 'VIEWED' | 'APPLIED' | 'REJECTED'
+
 export type JobPosting = {
   id: number
   companyWatchId: number
@@ -36,6 +38,8 @@ export type JobPosting = {
   applyUrl: string
   description: string | null
   firstSeenAt: string
+  applicationStatus: ApplicationStatus
+  statusUpdatedAt: string
 }
 
 export type CreateWatchRequest = {

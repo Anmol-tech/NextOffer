@@ -110,18 +110,21 @@ export function ResumePanel({
   }
 
   return (
-    <article className="panel resume-panel">
-      <PanelHeader
-        title="Resume workspace"
-        action={editing ? 'Cancel' : baseResume ? 'Edit base' : 'Add base'}
-        onAction={() => (editing ? setEditing(false) : startEditing())}
-      />
+    <article className="panel resume-panel panel-scroll-column">
+      <div className="panel-scroll-header">
+        <PanelHeader
+          title="Resume workspace"
+          action={editing ? 'Cancel' : baseResume ? 'Edit base' : 'Add base'}
+          onAction={() => (editing ? setEditing(false) : startEditing())}
+        />
 
-      {resumeError && <p className="inline-message inline-message-error">{resumeError}</p>}
-      {message && <p className="inline-message">{message}</p>}
+        {resumeError && <p className="inline-message inline-message-error">{resumeError}</p>}
+        {message && <p className="inline-message">{message}</p>}
+      </div>
 
-      {editing ? (
-        <div className="resume-editor">
+      <div className="panel-scroll-body">
+        {editing ? (
+          <div className="resume-editor">
           <div className="resume-format-row">
             <span className="eyebrow">Input format</span>
             <span className={`format-chip format-chip-${draftFormat.toLowerCase()}`}>
@@ -241,57 +244,58 @@ export function ResumePanel({
         </div>
       )}
 
-      <div className="version-list">
-        {resumeLoading && versions.length === 0 && (
-          <p className="inline-message">Loading tailored versions…</p>
-        )}
-        {!resumeLoading && versions.length === 0 && (
-          <p className="inline-message">Generate a tailored resume from a job to see versions here.</p>
-        )}
-        {versions.map((version) => (
-          <div className="version-row" key={version.id}>
-            <div>
-              <strong>{version.jobTitle}</strong>
-              <span>
-                {version.companyName} — {formatCreated(version.createdAt)}
-              </span>
-            </div>
-            <div className="version-actions">
-              <small>{statusLabel(version.outputStatus)}</small>
-              <div className="version-downloads">
-                {onViewTarget && (
-                  <button
-                    className={`ghost-button ghost-button-small${viewerTarget?.kind === 'tailored' && viewerTarget.id === version.id ? ' active' : ''}`}
-                    onClick={() => onViewTarget({ kind: 'tailored', id: version.id })}
-                    type="button"
-                  >
-                    View
-                  </button>
-                )}
-                {(version.outputStatus === 'PDF_READY' || version.outputStatus === 'LATEX_ONLY') && (
-                  <>
-                    {version.outputStatus === 'PDF_READY' && (
-                      <button
-                        className="ghost-button ghost-button-small"
-                        onClick={() => void downloadResume(version.id, 'pdf')}
-                        type="button"
-                      >
-                        PDF
-                      </button>
-                    )}
+        <div className="version-list">
+          {resumeLoading && versions.length === 0 && (
+            <p className="inline-message">Loading tailored versions…</p>
+          )}
+          {!resumeLoading && versions.length === 0 && (
+            <p className="inline-message">Generate a tailored resume from a job to see versions here.</p>
+          )}
+          {versions.map((version) => (
+            <div className="version-row" key={version.id}>
+              <div>
+                <strong>{version.jobTitle}</strong>
+                <span>
+                  {version.companyName} — {formatCreated(version.createdAt)}
+                </span>
+              </div>
+              <div className="version-actions">
+                <small>{statusLabel(version.outputStatus)}</small>
+                <div className="version-downloads">
+                  {onViewTarget && (
                     <button
-                      className="ghost-button ghost-button-small"
-                      onClick={() => void downloadResume(version.id, 'latex')}
+                      className={`ghost-button ghost-button-small${viewerTarget?.kind === 'tailored' && viewerTarget.id === version.id ? ' active' : ''}`}
+                      onClick={() => onViewTarget({ kind: 'tailored', id: version.id })}
                       type="button"
                     >
-                      LaTeX
+                      View
                     </button>
-                  </>
-                )}
+                  )}
+                  {(version.outputStatus === 'PDF_READY' || version.outputStatus === 'LATEX_ONLY') && (
+                    <>
+                      {version.outputStatus === 'PDF_READY' && (
+                        <button
+                          className="ghost-button ghost-button-small"
+                          onClick={() => void downloadResume(version.id, 'pdf')}
+                          type="button"
+                        >
+                          PDF
+                        </button>
+                      )}
+                      <button
+                        className="ghost-button ghost-button-small"
+                        onClick={() => void downloadResume(version.id, 'latex')}
+                        type="button"
+                      >
+                        LaTeX
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </article>
   )

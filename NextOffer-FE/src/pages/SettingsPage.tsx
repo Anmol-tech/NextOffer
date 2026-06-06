@@ -45,13 +45,6 @@ const emptyFilters = (): WatchFilterForm => ({
   departmentFilter: '',
 })
 
-const apiGroups = [
-  { label: 'Auth', value: 'Register, login, and current user' },
-  { label: 'Watches', value: 'Create, update, poll, and delete company watches' },
-  { label: 'Jobs', value: 'List matched jobs and inspect details' },
-  { label: 'Resumes', value: 'Base resume, tailoring, PDF, and LaTeX export' },
-]
-
 function filtersFromWatch(watch: CompanyWatch): WatchFilterForm {
   return {
     locationFilter: watch.locationFilter ?? '',
@@ -167,11 +160,12 @@ export function SettingsPage() {
   }
 
   return (
-    <section className="content-grid settings-layout">
-      <article className="panel settings-watch-panel">
-        <PanelHeader title="Company watches" action={`${watches.length} active`} />
+    <section className="content-grid settings-layout layout-fill">
+      <article className="panel settings-watch-panel panel-scroll-column">
+        <div className="settings-watch-top panel-scroll-header">
+          <PanelHeader title="Company watches" action={`${watches.length} active`} />
 
-        <form className="watch-form watch-form-card" onSubmit={handleAddWatch}>
+          <form className="watch-form watch-form-card" onSubmit={handleAddWatch}>
           <div className="watch-form-header">
             <div>
               <span className="eyebrow">New watch</span>
@@ -256,14 +250,15 @@ export function SettingsPage() {
         {message && <p className="inline-message">{message}</p>}
         {error && <p className="form-error">{error}</p>}
 
-        <div className="settings-section-header">
-          <div>
-            <span className="eyebrow">Saved watches</span>
-            <h3>Career pages being monitored</h3>
+          <div className="settings-section-header">
+            <div>
+              <span className="eyebrow">Saved watches</span>
+              <h3>Career pages being monitored</h3>
+            </div>
           </div>
         </div>
 
-        <div className="watch-list">
+        <div className="watch-list panel-scroll-body">
           {watches.map((watch) => (
             <div className="watch-row" key={watch.id}>
               <div className="watch-row-main">
@@ -282,6 +277,9 @@ export function SettingsPage() {
                   {formatLastScan(watch)}
                   {watch.lastScanStatus ? ` | ${watch.lastScanStatus}` : ''}
                 </small>
+                {watch.lastScanStatus === 'FAILED' && watch.lastErrorMessage && (
+                  <small className="watch-error">{watch.lastErrorMessage}</small>
+                )}
 
                 {editingId === watch.id && (
                   <div className="watch-filter-edit">
@@ -358,34 +356,6 @@ export function SettingsPage() {
           {watches.length === 0 && <p className="empty-state">No company watches yet.</p>}
         </div>
       </article>
-
-      <aside className="settings-side-panel">
-        <article className="panel settings-summary-panel">
-          <PanelHeader title="Workspace status" action="Live" />
-          <div className="settings-summary-grid">
-            <div>
-              <span>Company watches</span>
-              <strong>{watches.length}</strong>
-            </div>
-            <div>
-              <span>Polling source</span>
-              <strong>Backend</strong>
-            </div>
-          </div>
-        </article>
-
-        <article className="panel integration-panel">
-          <PanelHeader title="Connected APIs" />
-          <ul className="integration-list integration-list-compact">
-            {apiGroups.map((group) => (
-              <li key={group.label}>
-                <strong>{group.label}</strong>
-                <span>{group.value}</span>
-              </li>
-            ))}
-          </ul>
-        </article>
-      </aside>
     </section>
   )
 }

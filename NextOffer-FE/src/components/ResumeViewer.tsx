@@ -76,99 +76,102 @@ export function ResumeViewer({ target, onClose }: ResumeViewerProps) {
   const hasRenderedPdf = target?.kind === 'tailored' && Boolean(pdfUrl)
 
   return (
-    <article className="panel resume-viewer-panel">
-      <PanelHeader title={title} action={onClose ? 'Close' : undefined} onAction={onClose} />
+    <article className="panel resume-viewer-panel panel-scroll-column">
+      <div className="panel-scroll-header">
+        <PanelHeader title={title} action={onClose ? 'Close' : undefined} onAction={onClose} />
+        <p className="resume-viewer-subtitle">{subtitle}</p>
 
-      <p className="resume-viewer-subtitle">{subtitle}</p>
+        {target && (
+          <div className="viewer-tabs" role="tablist" aria-label="Resume view">
+            <button
+              className={tab === 'preview' ? 'active' : ''}
+              onClick={() => setTab('preview')}
+              type="button"
+            >
+              Preview
+            </button>
+            <button
+              className={tab === 'source' ? 'active' : ''}
+              onClick={() => setTab('source')}
+              type="button"
+            >
+              Source
+            </button>
+          </div>
+        )}
 
-      {target && (
-        <div className="viewer-tabs" role="tablist" aria-label="Resume view">
-          <button
-            className={tab === 'preview' ? 'active' : ''}
-            onClick={() => setTab('preview')}
-            type="button"
-          >
-            Preview
-          </button>
-          <button
-            className={tab === 'source' ? 'active' : ''}
-            onClick={() => setTab('source')}
-            type="button"
-          >
-            Source
-          </button>
-        </div>
-      )}
+        {error && <p className="inline-message inline-message-error">{error}</p>}
+        {loading && <p className="inline-message">Loading resume…</p>}
+      </div>
 
-      {error && <p className="inline-message inline-message-error">{error}</p>}
-      {loading && <p className="inline-message">Loading resume…</p>}
+      <div className="panel-scroll-body resume-viewer-scroll">
+        {!target && !loading && (
+          <div className="resume-viewer-empty">
+            <strong>No resume selected</strong>
+            <p>View your base resume or pick a tailored version from the list.</p>
+          </div>
+        )}
 
-      {!target && !loading && (
-        <div className="resume-viewer-empty">
-          <strong>No resume selected</strong>
-          <p>View your base resume or pick a tailored version from the list.</p>
-        </div>
-      )}
+        {target?.kind === 'tailored' && !detail && loading && (
+          <p className="inline-message">Loading tailored resume…</p>
+        )}
 
-      {target?.kind === 'tailored' && !detail && loading && (
-        <p className="inline-message">Loading tailored resume…</p>
-      )}
+        {target?.kind === 'tailored' && !detail && !loading && !error && (
+          <div className="resume-viewer-empty">
+            <strong>Tailored resume not loaded</strong>
+            <p>Select a version from the list or generate one for a job.</p>
+          </div>
+        )}
 
-      {target?.kind === 'tailored' && !detail && !loading && !error && (
-        <div className="resume-viewer-empty">
-          <strong>Tailored resume not loaded</strong>
-          <p>Select a version from the list or generate one for a job.</p>
-        </div>
-      )}
-
-      {target?.kind === 'base' && baseResume && tab === 'preview' && basePreview && (
-        <RenderedResumeDocument
-          companyName="Base resume"
-          email={user?.email ?? ''}
-          fullName={user?.fullName ?? 'Your name'}
-          jobTitle="Stored template"
-          parsed={basePreview}
-        />
-      )}
-
-      {target?.kind === 'base' && baseResume && tab === 'source' && (
-        <pre className="resume-source-block">{baseResume.rawText}</pre>
-      )}
-
-      {target?.kind === 'tailored' && detail && tab === 'preview' && hasRenderedPdf && pdfUrl && (
-        <iframe className="resume-pdf-frame" src={pdfUrl} title={`Resume PDF for ${detail.jobTitle}`} />
-      )}
-
-      {target?.kind === 'tailored' && detail && tab === 'preview' && !hasRenderedPdf && (
-        <>
-          {detail.outputStatus === 'LATEX_ONLY' && (
-            <p className="inline-message">
-              PDF not generated yet. Use Generate PDF to compile from LaTeX.
-            </p>
-          )}
+        {target?.kind === 'base' && baseResume && tab === 'preview' && basePreview && (
           <RenderedResumeDocument
-            companyName={detail.companyName}
+            companyName="Base resume"
             email={user?.email ?? ''}
             fullName={user?.fullName ?? 'Your name'}
-            jobTitle={detail.jobTitle}
-            parsed={{
-              summary: detail.content.summary,
-              skills: detail.content.skills,
-              experienceBullets: detail.content.experienceBullets,
-              sections: [],
-            }}
+            jobTitle="Stored template"
+            parsed={basePreview}
           />
-        </>
-      )}
+        )}
 
-      {target?.kind === 'tailored' && detail && tab === 'source' && (
-        <pre className="resume-source-block">
-          {detail.latexContent ?? JSON.stringify(detail.content, null, 2)}
-        </pre>
-      )}
+        {target?.kind === 'base' && baseResume && tab === 'source' && (
+          <pre className="resume-source-block">{baseResume.rawText}</pre>
+        )}
+
+        {target?.kind === 'tailored' && detail && tab === 'preview' && hasRenderedPdf && pdfUrl && (
+          <iframe className="resume-pdf-frame" src={pdfUrl} title={`Resume PDF for ${detail.jobTitle}`} />
+        )}
+
+        {target?.kind === 'tailored' && detail && tab === 'preview' && !hasRenderedPdf && (
+          <>
+            {detail.outputStatus === 'LATEX_ONLY' && (
+              <p className="inline-message">
+                PDF not generated yet. Use Generate PDF to compile from LaTeX.
+              </p>
+            )}
+            <RenderedResumeDocument
+              companyName={detail.companyName}
+              email={user?.email ?? ''}
+              fullName={user?.fullName ?? 'Your name'}
+              jobTitle={detail.jobTitle}
+              parsed={{
+                summary: detail.content.summary,
+                skills: detail.content.skills,
+                experienceBullets: detail.content.experienceBullets,
+                sections: [],
+              }}
+            />
+          </>
+        )}
+
+        {target?.kind === 'tailored' && detail && tab === 'source' && (
+          <pre className="resume-source-block">
+            {detail.latexContent ?? JSON.stringify(detail.content, null, 2)}
+          </pre>
+        )}
+      </div>
 
       {target?.kind === 'tailored' && detail && (
-        <div className="resume-viewer-actions">
+        <div className="resume-viewer-actions panel-scroll-header">
           {!detail.pdfAvailable && detail.latexContent && (
             <button
               className="primary-button"

@@ -4,8 +4,10 @@ import com.example.nextoffer.job.JobPostingDto;
 import com.example.nextoffer.watch.CompanyWatch;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.time.Instant;
 import java.util.List;
@@ -38,27 +40,51 @@ public class GreenhouseFetchStrategy implements CareerPageFetchStrategy {
     }
 
     public List<JobPostingDto> fetchBoard(String boardToken, String companyName, String careerPageUrl) {
-        GreenhouseJobsResponse response = restClient.get()
-                .uri(API_TEMPLATE, boardToken)
-                .retrieve()
-                .body(GreenhouseJobsResponse.class);
+        try {
+            GreenhouseJobsResponse response = restClient.get()
+                    .uri(API_TEMPLATE, boardToken)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::is4xxClientError, (request, clientResponse) -> {
+                        throw new CareerPageFetchException(greenhouseClientError(boardToken, clientResponse.getStatusCode().value()));
+                    })
+                    .body(GreenhouseJobsResponse.class);
 
-        if (response == null || response.jobs() == null) {
-            return List.of();
+            if (response == null || response.jobs() == null) {
+                return List.of();
+            }
+
+            return response.jobs().stream()
+                    .map(job -> new JobPostingDto(
+                            "gh-" + job.id(),
+                            companyName,
+                            job.title(),
+                            job.locationName(),
+                            job.absoluteUrl() != null ? job.absoluteUrl() : careerPageUrl,
+                            job.content() != null ? job.content() : "",
+                            Instant.now(),
+                            job.departmentNames()
+                    ))
+                    .toList();
+        } catch (CareerPageFetchException ex) {
+            throw ex;
+        } catch (RestClientResponseException ex) {
+            if (ex.getStatusCode().value() == 404) {
+                throw new CareerPageFetchException(greenhouseClientError(boardToken, 404), ex);
+            }
+            throw new CareerPageFetchException(
+                    "Could not load Greenhouse jobs for board \"" + boardToken + "\": " + ex.getMessage(),
+                    ex);
         }
+    }
 
-        return response.jobs().stream()
-                .map(job -> new JobPostingDto(
-                        "gh-" + job.id(),
-                        companyName,
-                        job.title(),
-                        job.locationName(),
-                        job.absoluteUrl() != null ? job.absoluteUrl() : careerPageUrl,
-                        job.content() != null ? job.content() : "",
-                        Instant.now(),
-                        job.departmentNames()
-                ))
-                .toList();
+    private static String greenhouseClientError(String boardToken, int statusCode) {
+        if (statusCode == 404) {
+            return """
+                    Greenhouse board "%s" was not found. Use the main career page URL \
+                    (for example https://boards.greenhouse.io/stripe), not a single job link, \
+                    and set the platform to Greenhouse.""".formatted(boardToken);
+        }
+        return "Greenhouse returned HTTP " + statusCode + " for board \"" + boardToken + "\".";
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

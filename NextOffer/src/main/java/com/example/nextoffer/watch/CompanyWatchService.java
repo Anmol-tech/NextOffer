@@ -2,6 +2,9 @@ package com.example.nextoffer.watch;
 
 import com.example.nextoffer.auth.AuthUserDetails;
 import com.example.nextoffer.career.AtsType;
+import com.example.nextoffer.career.AtsTypeDetector;
+import com.example.nextoffer.job.JobPostingRepository;
+import com.example.nextoffer.resume.TailoredResumeRepository;
 import com.example.nextoffer.user.User;
 import com.example.nextoffer.watch.dto.CompanyWatchResponse;
 import com.example.nextoffer.watch.dto.CreateCompanyWatchRequest;
@@ -15,9 +18,16 @@ import java.util.List;
 public class CompanyWatchService {
 
     private final CompanyWatchRepository companyWatchRepository;
+    private final JobPostingRepository jobPostingRepository;
+    private final TailoredResumeRepository tailoredResumeRepository;
 
-    public CompanyWatchService(CompanyWatchRepository companyWatchRepository) {
+    public CompanyWatchService(
+            CompanyWatchRepository companyWatchRepository,
+            JobPostingRepository jobPostingRepository,
+            TailoredResumeRepository tailoredResumeRepository) {
         this.companyWatchRepository = companyWatchRepository;
+        this.jobPostingRepository = jobPostingRepository;
+        this.tailoredResumeRepository = tailoredResumeRepository;
     }
 
     @Transactional(readOnly = true)
@@ -41,7 +51,7 @@ public class CompanyWatchService {
                 request.companyName().trim(),
                 request.careerPageUrl().trim(),
                 request.boardToken(),
-                request.atsType() == null ? AtsType.GREENHOUSE : request.atsType()
+                AtsTypeDetector.resolve(request.atsType(), request.careerPageUrl())
         );
         if (request.enabled() != null) {
             watch.setEnabled(request.enabled());
@@ -58,12 +68,13 @@ public class CompanyWatchService {
         }
         if (request.careerPageUrl() != null) {
             watch.setCareerPageUrl(request.careerPageUrl().trim());
+            watch.setAtsType(AtsTypeDetector.resolve(watch.getAtsType(), watch.getCareerPageUrl()));
         }
         if (request.boardToken() != null) {
             watch.setBoardToken(request.boardToken().isBlank() ? null : request.boardToken().trim());
         }
         if (request.atsType() != null) {
-            watch.setAtsType(request.atsType());
+            watch.setAtsType(AtsTypeDetector.resolve(request.atsType(), watch.getCareerPageUrl()));
         }
         if (request.enabled() != null) {
             watch.setEnabled(request.enabled());
@@ -96,6 +107,9 @@ public class CompanyWatchService {
     @Transactional
     public void delete(Long id, AuthUserDetails principal) {
         CompanyWatch watch = getOwnedWatch(id, principal);
+        Long watchId = watch.getId();
+        tailoredResumeRepository.deleteByJobPostingCompanyWatchId(watchId);
+        jobPostingRepository.deleteByCompanyWatchId(watchId);
         companyWatchRepository.delete(watch);
     }
 

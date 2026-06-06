@@ -35,20 +35,24 @@ export function JobsPage({ jobs, selectedJob, selectedJobId, onSelectJob }: Jobs
   }
 
   return (
-    <section className="content-grid jobs-layout">
+    <section className="content-grid jobs-layout layout-fill">
       <article className="panel job-panel">
-        <PanelHeader
-          title="Career page matches"
-          action={refreshing ? 'Refreshing…' : 'Refresh'}
-          onAction={handleRefresh}
-        />
-        {message && <p className="inline-message">{message}</p>}
-        <div className="filter-row">
-          <span>{jobs.length} roles loaded</span>
-          <span>Live from backend</span>
-          <span>Newest first</span>
+        <div className="job-panel-top">
+          <PanelHeader
+            title="Career page matches"
+            action={refreshing ? 'Refreshing…' : 'Refresh'}
+            onAction={handleRefresh}
+          />
+          {message && <p className="inline-message">{message}</p>}
+          <div className="filter-row">
+            <span>{jobs.length} roles loaded</span>
+            <span>Live from backend</span>
+            <span>Newest first</span>
+          </div>
         </div>
-        <JobList jobs={jobs} selectedJobId={selectedJobId} onSelectJob={onSelectJob} />
+        <div className="job-panel-scroll">
+          <JobList jobs={jobs} selectedJobId={selectedJobId} onSelectJob={onSelectJob} />
+        </div>
       </article>
       <JobDetailPanel job={selectedJob} />
     </section>

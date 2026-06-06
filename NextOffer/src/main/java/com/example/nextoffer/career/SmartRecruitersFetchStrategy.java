@@ -85,17 +85,24 @@ public class SmartRecruitersFetchStrategy implements CareerPageFetchStrategy {
             HttpResponse<String> response = httpClient.send(
                     request, HttpResponse.BodyHandlers.ofString());
 
+            if (response.statusCode() == 404) {
+                throw new CareerPageFetchException("""
+                        SmartRecruiters company "%s" was not found. Use the company careers URL \
+                        (for example https://jobs.smartrecruiters.com/YourCompany), not a single job link, \
+                        and set the platform to SmartRecruiters.""".formatted(companyId));
+            }
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new RuntimeException(
-                        "HTTP " + response.statusCode()
-                        + " from SmartRecruiters API for company: " + companyId);
+                throw new CareerPageFetchException(
+                        "SmartRecruiters returned HTTP " + response.statusCode() + " for company \"" + companyId + "\".");
             }
             return objectMapper.readValue(response.body(), SrPostingsResponse.class);
+        } catch (CareerPageFetchException e) {
+            throw e;
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException(
-                    "SmartRecruiters API request failed for " + companyId + ": " + e.getMessage(), e);
+            throw new CareerPageFetchException(
+                    "SmartRecruiters request failed for \"" + companyId + "\": " + e.getMessage(), e);
         }
     }
 

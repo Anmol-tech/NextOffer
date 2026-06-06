@@ -1,4 +1,5 @@
 import type { JobPosting as ApiJobPosting } from '../api/types'
+import { fromApiApplicationStatus } from './trackerStatus'
 import type { Job } from '../types'
 
 export function mapJobPosting(dto: ApiJobPosting): Job {
@@ -12,7 +13,7 @@ export function mapJobPosting(dto: ApiJobPosting): Job {
     role: dto.title,
     location: dto.location ?? 'Unspecified',
     match: 0,
-    status: 'New',
+    status: fromApiApplicationStatus(dto.applicationStatus),
     firstSeen: formatFirstSeen(dto.firstSeenAt),
     applyUrl: dto.applyUrl,
     salary: '—',
