@@ -1,0 +1,2581 @@
+@startuml NextOffer_Overall_Class_Diagram
+title Overall Class Diagram - Full System Architecture
+top to bottom direction
+skinparam classAttributeIconSize 0
+skinparam backgroundColor #FEFEFE
+skinparam classBackgroundColor #E1F5FE
+skinparam classBorderColor #0288D1
+skinparam arrowColor #0288D1
+
+' Frontend Layer
+package "Frontend - React/TypeScript" #E3F2FD {
+  class AuthContext {
+    +login(email, password)
+    +register(email, password, fullName)
+    +logout()
+  }
+
+  class AppDataContext {
+    +refreshJobs()
+    +updateApplicationStatus()
+  }
+}
+
+' Backend Controllers
+package "Backend - Controllers" #FFF9C4 {
+  class AuthController {
+    +register()
+    +login()
+    +me()
+  }
+
+  class CompanyWatchController {
+    +list()
+    +create()
+    +poll()
+  }
+
+  class JobPostingController {
+    +list()
+    +get()
+  }
+
+  class ResumeController {
+    +generateForJob()
+    +saveBaseResume()
+  }
+}
+
+' Controller/Service DTO Boundary
+package "Backend - DTOs (API Contracts)" #E0F7FA {
+  class RegisterRequest <<record>>
+  class LoginRequest <<record>>
+  class AuthResponse <<record>>
+  class CreateCompanyWatchRequest <<record>>
+  class CompanyWatchResponse <<record>>
+  class JobPostingResponse <<record>>
+  class SaveBaseResumeRequest <<record>>
+  class BaseResumeResponse <<record>>
+  class TailoredResumeResponse <<record>>
+  class TailoredResumeDetailResponse <<record>>
+  class UpdateApplicationStatusRequest <<record>>
+}
+
+' Backend Services
+package "Backend - Services" #F3E5F5 {
+  class AuthService {
+    +register()
+    +login()
+  }
+
+  class CompanyWatchService {
+    +list()
+    +create()
+    +poll()
+  }
+
+  class JobPostingService {
+    +list()
+    +get()
+  }
+
+  class ResumeService {
+    +generateForJob()
+    +saveTailoredResume()
+  }
+}
+
+' Shared Domain Types
+package "Backend - Enums and Records" #E8EAF6 {
+  enum AtsType {
+    GREENHOUSE
+    WORKDAY
+    SMART_RECRUITERS
+    LEVER
+    CUSTOM_HTML
+  }
+
+  enum ApplicationState {
+    NEW
+    VIEWED
+    APPLIED
+    REJECTED
+  }
+
+  class TailoredResumeContent <<record>> {
+    +summary: String
+    +skills: List~String~
+    +experienceBullets: List~String~
+  }
+}
+
+' Backend Entities
+package "Backend - Entities (Database)" #FCE4EC {
+  class User {
+    -id: Long
+    -email: String
+    -passwordHash: String
+  }
+
+  class CompanyWatch {
+    -id: Long
+    -companyName: String
+    -atsType: AtsType
+  }
+
+  class JobPosting {
+    -id: Long
+    -title: String
+    -company: String
+    -applicationStatus
+  }
+
+  class BaseResume {
+    -id: Long
+    -rawText: String
+  }
+
+  class TailoredResume {
+    -id: Long
+    -content: TailoredResumeContent
+    -pdfPath: String
+  }
+}
+
+' Design Patterns
+package "Design Patterns - Creational" #E8F5E9 {
+  interface CareerPageFetcher {
+    +fetch(careerPageUrl: String): String
+  }
+
+  abstract class CareerPageFetcherFactory {
+    +createFetcher()
+  }
+
+  class TailoredResumeBuilder {
+    +summary()
+    +skills()
+    +build()
+  }
+}
+
+package "Design Patterns - Structural" #FFF3E0 {
+  class ResumeTailoringFacade {
+    +tailor()
+  }
+
+  class CachingCareerPageProxy {
+    +fetch()
+  }
+
+  class MatchScoreJobDecorator {
+    -matchPercent: int
+  }
+}
+
+package "Design Patterns - Behavioral" #F1F8E9 {
+  class CompanyWatchSubject {
+    +subscribe()
+    +notifyNewJob()
+  }
+
+  class ApplicationTrackerContext {
+    -state: ApplicationState
+  }
+
+  class JobIngestionMediator {
+    +pollWatch()
+  }
+
+  class ResumeValidationHandler {
+    +validate()
+  }
+}
+
+package "AI Integration" #EDE7F6 {
+  interface ResumeGenerator {
+    +generate(job, baseResume): TailoredResumeContent
+  }
+
+  class LLMResumeGenerator {
+    -client: OpenAiClient
+    +generate(job, baseResume): TailoredResumeContent
+  }
+
+  class OpenAiClient {
+    +tailor(jobTitle, companyName, description, base): TailoredResumeContent
+  }
+}
+
+' Relationships
+AuthContext "1" --> "1" AuthService : calls
+AuthContext "1" --> "0..*" CompanyWatchService : manages watches
+AppDataContext "1" --> "1" JobPostingService : loads jobs
+AppDataContext "1" --> "1" ResumeService : loads resumes
+
+AuthController "1" --> "1" AuthService : delegates
+CompanyWatchController "1" --> "1" CompanyWatchService : delegates
+JobPostingController "1" --> "1" JobPostingService : delegates
+ResumeController "1" --> "1" ResumeService : delegates
+
+AuthController "1" --> "1" RegisterRequest : accepts
+AuthController "1" --> "1" LoginRequest : accepts
+AuthController "1" --> "1" AuthResponse : returns
+CompanyWatchController "1" --> "1" CreateCompanyWatchRequest : accepts
+CompanyWatchController "1" --> "0..*" CompanyWatchResponse : returns
+JobPostingController "1" --> "0..*" JobPostingResponse : returns
+ResumeController "1" --> "1" SaveBaseResumeRequest : accepts
+ResumeController "1" --> "1" BaseResumeResponse : returns
+ResumeController "1" --> "0..*" TailoredResumeResponse : returns
+ResumeController "1" --> "1" TailoredResumeDetailResponse : returns
+
+AuthService "1" --> "0..*" User : persists
+CompanyWatchService "1" --> "0..*" CompanyWatch : manages
+JobPostingService "1" --> "0..*" JobPosting : reads
+ResumeService "1" --> "0..*" TailoredResume : saves
+ResumeService "1" --> "1" BaseResume : reads
+
+CompanyWatch "1" --> "0..*" JobPosting : owns
+TailoredResume "0..*" --> "1" JobPosting : targets
+CompanyWatch "0..*" --> "1" AtsType : classified by
+JobPosting "0..*" --> "1" ApplicationState : tracked as
+TailoredResume "0..*" --> "1" TailoredResumeContent : stores
+
+CareerPageFetcherFactory "1" ..> "1" CompanyWatchService : dependency creates fetchers for
+CareerPageFetcherFactory "1" ..> "1" CareerPageFetcher : dependency creates
+LLMResumeGenerator ..|> ResumeGenerator : realizes
+LLMResumeGenerator "1" --> "1" OpenAiClient : uses
+ResumeService "1" --> "1" ResumeGenerator : delegates AI tailoring
+TailoredResumeBuilder "1" ..> "1" ResumeService : dependency builds content for
+ResumeTailoringFacade "1" ..> "1" ResumeService : dependency simplifies workflow for
+CachingCareerPageProxy "1" ..> "1" CompanyWatchService : dependency caches fetches for
+CompanyWatchSubject "1" ..> "1" CompanyWatchService : dependency notifies
+ApplicationTrackerContext "1" ..> "1" JobPostingService : dependency transitions status for
+ResumeValidationHandler "1" ..> "1" ResumeTailoringFacade : dependency validates
+@enduml
+
+@startuml NextOffer_Use_Case_Diagram
+title Use Case Diagram - NextOffer System
+top to bottom direction
+skinparam backgroundColor #FEFEFE
+skinparam actorStyle awesome
+
+actor "Student/Job Seeker" as Student
+actor "Administrator" as Admin
+
+rectangle "NextOffer System" #E3F2FD {
+  (Register & Login) as UC1
+  (Manage Profile) as UC2
+  (Create Company Watch) as UC3
+  (Poll Career Pages) as UC4
+  (View New Jobs) as UC5
+  (Track Application Status) as UC6
+  (Upload Resume) as UC7
+  (Tailor Resume for Job) as UC8
+  (Generate PDF) as UC9
+  (View Resume History) as UC10
+}
+
+Student --> UC1
+Student --> UC2
+Student --> UC3
+Student --> UC6
+Student --> UC7
+Student --> UC8
+Student --> UC9
+Student --> UC10
+
+UC3 -.-> UC4 : includes
+UC4 -.-> UC5 : includes
+UC5 -.-> UC6 : extends
+UC6 -.-> UC8 : extends
+UC8 -.-> UC9 : includes
+UC8 -.-> UC10 : includes
+
+Admin -.-> UC4 : configures
+
+@enduml
+
+@startuml NextOffer_Factory_Pattern_Detail
+title Factory Pattern - Career Page Fetcher Creation
+top to bottom direction
+skinparam backgroundColor #FEFEFE
+skinparam classBackgroundColor #E8F5E9
+skinparam classBorderColor #43A047
+
+enum AtsType {
+  GREENHOUSE
+  WORKDAY
+  SMART_RECRUITERS
+}
+
+interface CareerPageFetcher {
+  +fetch(url: String): String
+}
+
+class GreenhouseFetcher {
+  +fetch(url: String): String
+}
+
+class WorkdayFetcher {
+  +fetch(url: String): String
+}
+
+class SmartRecruitersFetcher {
+  +fetch(url: String): String
+}
+
+abstract class CareerPageFetcherFactory {
+  +createFetcher(type: AtsType): CareerPageFetcher
+}
+
+class DefaultCareerPageFetcherFactory {
+  +createFetcher(type: AtsType): CareerPageFetcher
+}
+
+GreenhouseFetcher ..|> CareerPageFetcher : realizes
+WorkdayFetcher ..|> CareerPageFetcher : realizes
+SmartRecruitersFetcher ..|> CareerPageFetcher : realizes
+DefaultCareerPageFetcherFactory --|> CareerPageFetcherFactory
+CareerPageFetcherFactory "1" ..> "1" CareerPageFetcher : creates
+CareerPageFetcherFactory "1" ..> "1" AtsType : uses
+
+@enduml
+
+@startuml NextOffer_Observer_Pattern_Detail
+title Observer Pattern - New Job Discovery
+top to bottom direction
+skinparam backgroundColor #FEFEFE
+skinparam classBackgroundColor #F1F8E9
+skinparam classBorderColor #689F38
+
+class CompanyWatchSubject {
+  -listeners: List~JobDiscoveryListener~
+  +subscribe(listener): void
+  +unsubscribe(listener): void
+  +notifyNewJob(job, watchId): void
+}
+
+interface JobDiscoveryListener {
+  +onNewJobDiscovered(job, watchId): void
+}
+
+class JobDiscoveryPersistenceListener {
+  -repository: JobPostingRepository
+  +onNewJobDiscovered(job, watchId): void
+}
+
+class JobPollingScheduler {
+  -subject: CompanyWatchSubject
+  +pollEnabledWatches(): void
+}
+
+JobDiscoveryPersistenceListener ..|> JobDiscoveryListener : realizes
+CompanyWatchSubject "1" o--> "0..*" JobDiscoveryListener : notifies >
+JobDiscoveryPersistenceListener "1" --> "1" JobPostingRepository : persists through
+JobPollingScheduler "1" --> "1" CompanyWatchSubject : triggers polling
+
+@enduml
+
+@startuml NextOffer_Facade_Pattern_Detail
+title Facade Pattern - Resume Tailoring Simplified
+top to bottom direction
+skinparam backgroundColor #FEFEFE
+skinparam classBackgroundColor #FFF3E0
+skinparam classBorderColor #F57C00
+
+class ResumeTailoringFacade {
+  -pipeline: AbstractTailoringPipeline
+  -validationChain: ResumeValidationHandler
+  -renderer: ResumeRenderer
+  +tailor(job, baseResume): TailoredResumeContent
+}
+
+abstract class AbstractTailoringPipeline {
+  +execute(job, baseResume): TailoredResumeContent
+  #extractKeywords()
+  #rewriteSummary()
+}
+
+class OpenAiTailoringPipeline {
+  -client: OpenAiClient
+  +execute(job, baseResume): TailoredResumeContent
+}
+
+abstract class ResumeValidationHandler {
+  #next: ResumeValidationHandler
+  +validate(content): void
+}
+
+class NoFabricationValidationHandler {
+  #check(content): void
+}
+
+interface ResumeRenderer {
+  +render(content): String
+}
+
+class LatexResumeRenderer {
+  +render(content): String
+}
+
+OpenAiTailoringPipeline --|> AbstractTailoringPipeline
+NoFabricationValidationHandler --|> ResumeValidationHandler
+LatexResumeRenderer ..|> ResumeRenderer : realizes
+ResumeTailoringFacade "1" --> "1" AbstractTailoringPipeline : uses
+ResumeTailoringFacade "1" --> "1..*" ResumeValidationHandler : chains
+ResumeTailoringFacade "1" --> "1" ResumeRenderer : renders
+
+@enduml
+
+@startuml NextOffer_State_Pattern_Detail
+title State Pattern - Application Tracker Workflow
+top to bottom direction
+skinparam backgroundColor #FEFEFE
+skinparam classBackgroundColor #FCE4EC
+skinparam classBorderColor #C2185B
+
+enum ApplicationStatus {
+  NEW
+  VIEWED
+  APPLIED
+  REJECTED
+}
+
+interface ApplicationState {
+  +getStatus(): ApplicationStatus
+  +view(context): void
+  +apply(context): void
+  +reject(context): void
+}
+
+class NewApplicationState {
+  +view(): moves to Viewed
+  +apply(): moves to Applied
+}
+
+class ViewedApplicationState {
+  +apply(): moves to Applied
+}
+
+class AppliedApplicationState {
+  +reject(): moves to Rejected
+}
+
+class RejectedApplicationState {
+  (final state)
+}
+
+class ApplicationTrackerContext {
+  -state: ApplicationState
+  -jobPosting: JobPosting
+  +setState(state): void
+  +transitionTo(target): void
+}
+
+NewApplicationState ..|> ApplicationState : realizes
+ViewedApplicationState ..|> ApplicationState : realizes
+AppliedApplicationState ..|> ApplicationState : realizes
+RejectedApplicationState ..|> ApplicationState : realizes
+ApplicationTrackerContext "1" o--> "1" ApplicationState : holds
+
+@enduml
+
+@startuml NextOffer_Chain_Pattern_Detail
+title Chain of Responsibility - Resume Validation Pipeline
+top to bottom direction
+skinparam backgroundColor #FEFEFE
+skinparam classBackgroundColor #E0F2F1
+skinparam classBorderColor #00897B
+
+abstract class ResumeValidationHandler {
+  #next: ResumeValidationHandler
+  +linkWith(next): ResumeValidationHandler
+  +validate(content): void
+  #check(content): void
+}
+
+class NoFabricationValidationHandler {
+  #check(content): checks for false experience
+}
+
+class AtsLengthValidationHandler {
+  #check(content): validates length limits
+}
+
+class RequiredSectionsValidationHandler {
+  #check(content): ensures required sections
+}
+
+class TailoredResumeContent {
+  +summary: String
+  +skills: List~String~
+  +experienceBullets: List~String~
+}
+
+NoFabricationValidationHandler --|> ResumeValidationHandler
+AtsLengthValidationHandler --|> ResumeValidationHandler
+RequiredSectionsValidationHandler --|> ResumeValidationHandler
+ResumeValidationHandler "1" o--> "0..1" ResumeValidationHandler : next handler >
+ResumeValidationHandler "1" ..> "1" TailoredResumeContent : validates
+
+@enduml
+
+@startuml NextOffer_Builder_Pattern_Detail
+title Builder Pattern - Tailored Resume Construction
+top to bottom direction
+skinparam backgroundColor #FEFEFE
+skinparam classBackgroundColor #F3E5F5
+skinparam classBorderColor #7B1FA2
+
+class TailoredResumeBuilder {
+  -summary: String
+  -skills: List~String~
+  -bullets: List~String~
+  +summary(text: String): TailoredResumeBuilder
+  +addSkill(skill: String): TailoredResumeBuilder
+  +addBullet(bullet: String): TailoredResumeBuilder
+  +build(): TailoredResumeContent
+}
+
+class TailoredResumeContent {
+  +summary: String
+  +skills: List~String~
+  +experienceBullets: List~String~
+}
+
+abstract class AbstractTailoringPipeline {
+  #buildContent(job): TailoredResumeBuilder
+  #execute(job, baseResume): TailoredResumeContent
+}
+
+TailoredResumeBuilder "1" --> "1" TailoredResumeContent : creates
+AbstractTailoringPipeline "1" --> "1" TailoredResumeBuilder : uses step-by-step
+
+@enduml
+
+@startuml NextOffer_Watch_Polling_Flow
+title Watch Polling Flow - Runtime Sequence
+participant "User" as EndUser
+participant "SettingsPage" as UI
+participant "WatchController" as Controller
+participant "WatchService" as Service
+participant "JobIngestionMediator" as Mediator
+participant "CompanyWatchSubject" as Subject
+participant "JobDiscoveryListener" as Listener
+participant "Database" as DB
+
+EndUser -> UI: Click Poll Watch
+UI -> Controller: POST /api/watches/{id}/poll
+Controller -> Service: poll(id)
+Service -> Mediator: pollWatch(watch, knownIds, notify)
+Mediator -> Subject: Fetches new jobs
+Subject -> Subject: Compares with known jobs
+alt New Jobs Found
+  Subject -> Listener: notifyNewJob(job)
+  Listener -> DB: save(JobPosting)
+  Listener --> Subject: persisted
+end
+Subject --> Service: newJobs[]
+Service --> Controller: PollWatchResponse
+Controller --> UI: Success - X new jobs
+UI --> EndUser: Display results
+
+@enduml
+
+@startuml NextOffer_Resume_Tailoring_Flow
+title Resume Tailoring Flow - Runtime Sequence
+participant "User" as EndUser
+participant "ResumePage" as UI
+participant "ResumeController" as Controller
+participant "ResumeService" as Service
+participant "ResumeTailoringFacade" as Facade
+participant "OpenAiPipeline" as Pipeline
+participant "OpenAI API" as OpenAI
+participant "ValidationChain" as Validation
+participant "LatexRenderer" as Renderer
+participant "PdfService" as Pdf
+participant "Database" as DB
+
+EndUser -> UI: Generate Resume for Job
+UI -> Controller: POST /api/resumes/jobs/{jobId}
+Controller -> Service: generateForJob(jobId)
+Service -> Facade: tailor(job, baseResume)
+Facade -> Pipeline: execute(job, baseResume)
+Pipeline -> Pipeline: extractKeywords()
+Pipeline -> OpenAI: Send job + resume
+OpenAI --> Pipeline: Tailored content
+Facade -> Validation: validate(content)
+Validation -> Validation: Check chain
+Validation --> Facade: Valid
+Facade --> Service: TailoredResumeContent
+Service -> Renderer: render(content)
+Renderer --> Service: LaTeX source
+Service -> Pdf: compile(latex)
+Pdf --> Service: PDF file
+Service -> DB: save(TailoredResume)
+Service --> Controller: TailoredResumeResponse
+Controller --> UI: Resume generated
+UI --> EndUser: Download/View
+
+@enduml
+
+@startuml NextOffer_Full_System
+title NextOffer Full System - Packages, Files, and Runtime Boundaries
+top to bottom direction
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+skinparam backgroundColor #FEFEFE
+
+actor "Student/User" as User
+
+node "Frontend - React/TypeScript" #E3F2FD {
+  package "Browser" {
+    component "main.tsx" as FE_Main
+    component "App.tsx" as FE_App
+    package "Contexts" {
+      component "AuthContext" as FE_Auth
+      component "AppDataContext" as FE_Data
+    }
+    package "Pages" {
+      component "AuthScreen" as P1
+      component "Dashboard" as P2
+      component "Jobs" as P3
+      component "Resumes" as P4
+    }
+  }
+}
+
+node "Backend - Spring Boot" #FFF9C4 {
+  package "Controllers" {
+    component "AuthController" as C1
+    component "WatchController" as C2
+    component "JobController" as C3
+    component "ResumeController" as C4
+  }
+  package "Services" {
+    component "AuthService" as S1
+    component "WatchService" as S2
+    component "JobService" as S3
+    component "ResumeService" as S4
+  }
+  package "Patterns" {
+    component "Factories" as PAT1
+    component "Facades" as PAT2
+    component "Observers" as PAT3
+  }
+}
+
+database "PostgreSQL" as DB
+cloud "External APIs" as EXT
+
+User --> FE_Main
+FE_Main --> FE_App
+FE_App --> FE_Auth
+FE_App --> FE_Data
+FE_App --> P1
+FE_App --> P2
+FE_App --> P3
+FE_App --> P4
+
+FE_Auth --> C1
+FE_Data --> C2
+FE_Data --> C3
+FE_Data --> C4
+
+C1 --> S1
+C2 --> S2
+C3 --> S3
+C4 --> S4
+
+S1 --> DB
+S2 --> DB
+S3 --> DB
+S4 --> DB
+
+S2 --> PAT1
+S2 --> PAT3
+S3 --> PAT2
+S4 --> PAT2
+
+EXT --> PAT1
+@enduml
+
+@startuml NextOffer_Auth_Sequence
+title Authentication Flow - Register & Login
+participant "AuthScreen" as UI
+participant "AuthContext" as Ctx
+participant "AuthController" as Ctrl
+participant "AuthService" as Svc
+participant "JwtService" as JWT
+participant "UserRepository" as Repo
+participant "Browser Storage" as Storage
+
+UI -> Ctx: register(email, pwd, name)
+Ctx -> Ctrl: POST /api/auth/register
+Ctrl -> Svc: register()
+Svc -> Repo: findByEmail() - check exists
+alt Email exists
+  Svc --> Ctrl: EmailAlreadyExistsException
+else Email new
+  Svc -> Repo: save(new User)
+  Svc -> JWT: generateToken()
+  JWT --> Svc: token
+  Svc --> Ctrl: AuthResponse(token, user)
+end
+Ctrl --> Ctx: AuthResponse
+Ctx -> Storage: setStoredToken(token)
+Ctx --> UI: authenticated state
+UI --> UI: navigate to Dashboard
+
+@enduml
+
+@startuml NextOffer_Design_Patterns_Overview
+title Design Patterns - Complete Overview
+top to bottom direction
+skinparam backgroundColor #FEFEFE
+
+package "Creational Patterns (4)" #E8F5E9 {
+  card FM [
+    **Factory Method**
+    ---
+    CareerPageFetcherFactory
+    Creates specific fetchers
+    by ATS type
+  ]
+  card AF [
+    **Abstract Factory**
+    ---
+    AtsIntegrationFactory
+    Creates families of
+    related ATS components
+  ]
+  card BD [
+    **Builder**
+    ---
+    TailoredResumeBuilder
+    Step-by-step resume
+    construction
+  ]
+  card PT [
+    **Prototype**
+    ---
+    ResumeTemplatePrototype
+    Clone templates
+    for reuse
+  ]
+}
+
+package "Structural Patterns (7)" #FFF3E0 {
+  card AD [
+    **Adapter**
+    ---
+    GreenhouseJobAdapter
+    Convert ATS data
+    to internal format
+  ]
+  card BR [
+    **Bridge**
+    ---
+    ResumeRenderer
+    Separate content
+    from rendering
+  ]
+  card CO [
+    **Composite**
+    ---
+    ResumeSectionComponent
+    Tree of resume
+    sections
+  ]
+  card DC [
+    **Decorator**
+    ---
+    MatchScoreJobDecorator
+    Add metadata
+    to jobs
+  ]
+  card FC [
+    **Facade**
+    ---
+    ResumeTailoringFacade
+    Simplify resume
+    generation
+  ]
+  card FW [
+    **Flyweight**
+    ---
+    CompanyBrandingFlyweight
+    Share immutable
+    metadata
+  ]
+  card PX [
+    **Proxy**
+    ---
+    CachingCareerPageProxy
+    Lazy-load &
+    cache fetches
+  ]
+}
+
+package "Behavioral Patterns (11)" #F1F8E9 {
+  card OB [
+    **Observer**
+    ---
+    CompanyWatchSubject
+    Notify on
+    new jobs
+  ]
+  card ST [
+    **Strategy**
+    ---
+    CareerPageFetchStrategy
+    Interchangeable
+    fetch algorithms
+  ]
+  card SM [
+    **State**
+    ---
+    ApplicationTrackerContext
+    Job application
+    lifecycle
+  ]
+  card CM [
+    **Command**
+    ---
+    TailorResumeCommand
+    Queue tailor actions
+    & undo
+  ]
+  card CH [
+    **Chain of Responsibility**
+    ---
+    ResumeValidationHandler
+    Sequential
+    validation checks
+  ]
+  card TM [
+    **Template Method**
+    ---
+    AbstractTailoringPipeline
+    Fixed pipeline
+    steps
+  ]
+  card MM [
+    **Memento**
+    ---
+    ResumeVersionMemento
+    Store resume
+    snapshots
+  ]
+  card MD [
+    **Mediator**
+    ---
+    JobIngestionMediator
+    Coordinate job
+    discovery
+  ]
+  card IT [
+    **Iterator**
+    ---
+    ResumeSectionIterator
+    Traverse section
+    tree
+  ]
+  card VI [
+    **Visitor**
+    ---
+    LatexExportVisitor
+    Operations on
+    sections
+  ]
+  card NO [
+    **Null Object**
+    ---
+    NullResumeSection
+    Safe no-op
+    section
+  ]
+}
+
+@enduml
+
+
+@startuml NextOffer_Full_System
+title NextOffer Full System - Packages, Files, and Runtime Boundaries
+skinparam packageStyle rectangle
+skinparam componentStyle rectangle
+
+actor "Student/User" as User
+
+node "Browser" {
+  package "NextOffer-FE/src" as FE {
+    component "main.tsx" as FE_Main
+    component "App.tsx" as FE_App
+
+    package "context" {
+      component "AuthContext.tsx" as FE_AuthContext <<Observer/Provider>>
+      component "AppDataContext.tsx" as FE_AppDataContext <<Observer/Provider>>
+    }
+
+    package "pages" {
+      component "AuthScreen.tsx" as FE_AuthScreen
+      component "DashboardPage.tsx" as FE_Dashboard
+      component "JobsPage.tsx" as FE_JobsPage
+      component "ResumesPage.tsx" as FE_ResumesPage
+      component "TrackerPage.tsx" as FE_TrackerPage
+      component "SettingsPage.tsx" as FE_SettingsPage
+    }
+
+    package "components" {
+      component "ActivityPanel.tsx" as FE_ActivityPanel
+      component "JobDetailPanel.tsx" as FE_JobDetailPanel
+      component "JobList.tsx" as FE_JobList
+      component "Metric.tsx" as FE_Metric
+      component "PanelHeader.tsx" as FE_PanelHeader
+      component "ResumePanel.tsx" as FE_ResumePanel
+      component "ResumeViewer.tsx" as FE_ResumeViewer
+      component "ResumeViewerModal.tsx" as FE_ResumeViewerModal
+    }
+
+    package "api" {
+      component "client.ts" as FE_ApiClient
+      component "auth.ts" as FE_ApiAuth
+      component "jobs.ts" as FE_ApiJobs
+      component "resumes.ts" as FE_ApiResumes
+      component "watches.ts" as FE_ApiWatches
+      component "types.ts" as FE_ApiTypes
+    }
+
+    package "lib" {
+      component "mappers.ts" as FE_Mappers
+      component "trackerStatus.ts" as FE_TrackerStatus
+      component "resumeViewer.ts" as FE_ResumeViewerLib
+      component "latexPreview.ts" as FE_LatexPreview
+    }
+
+    package "data" {
+      component "mockData.ts" as FE_MockData
+    }
+
+    component "types.ts" as FE_Types
+  }
+}
+
+node "Spring Boot API - NextOffer/src/main/java/com/example/nextoffer" as API {
+  package "auth" as BE_Auth
+  package "user" as BE_User
+  package "job" as BE_Job
+  package "career" as BE_Career
+  package "watch" as BE_Watch
+  package "resume" as BE_Resume
+  package "tracker" as BE_Tracker
+  package "config" as BE_Config
+  component "NextOfferApplication.java" as BE_App
+}
+
+database "PostgreSQL" as DB
+cloud "Career Pages / ATS APIs\nGreenhouse, Workday,\nSmartRecruiters" as ATS
+cloud "OpenAI API" as OpenAI
+artifact "LaTeX/PDF Output" as PDF
+
+User --> FE_Main
+FE_Main --> FE_App
+FE_Main --> FE_AuthContext
+FE_Main --> FE_AppDataContext
+FE_App --> FE_AuthScreen
+FE_App --> FE_Dashboard
+FE_App --> FE_JobsPage
+FE_App --> FE_ResumesPage
+FE_App --> FE_TrackerPage
+FE_App --> FE_SettingsPage
+
+FE_Dashboard --> FE_JobList
+FE_Dashboard --> FE_JobDetailPanel
+FE_Dashboard --> FE_ResumePanel
+FE_Dashboard --> FE_ActivityPanel
+FE_Dashboard --> FE_Metric
+FE_JobsPage --> FE_JobList
+FE_JobsPage --> FE_JobDetailPanel
+FE_ResumesPage --> FE_ResumePanel
+FE_ResumePanel --> FE_ResumeViewerModal
+FE_ResumeViewerModal --> FE_ResumeViewer
+
+FE_AuthContext --> FE_ApiAuth
+FE_AppDataContext --> FE_ApiJobs
+FE_AppDataContext --> FE_ApiWatches
+FE_AppDataContext --> FE_ApiResumes
+FE_ApiAuth --> FE_ApiClient
+FE_ApiJobs --> FE_ApiClient
+FE_ApiWatches --> FE_ApiClient
+FE_ApiResumes --> FE_ApiClient
+FE_ApiClient --> BE_Auth : /api/auth/*
+FE_ApiClient --> BE_Job : /api/jobs/*
+FE_ApiClient --> BE_Watch : /api/watches/*
+FE_ApiClient --> BE_Resume : /api/resumes/*
+
+BE_Auth --> BE_User
+BE_Watch --> BE_Career
+BE_Watch --> BE_Job
+BE_Job --> BE_Tracker
+BE_Job --> BE_Resume
+BE_Resume --> BE_Job
+BE_Config --> BE_Job
+BE_Auth --> DB
+BE_User --> DB
+BE_Job --> DB
+BE_Watch --> DB
+BE_Resume --> DB
+BE_Career --> ATS
+BE_Resume --> OpenAI
+BE_Resume --> PDF
+@enduml
+
+@startuml NextOffer_Backend_Packages
+title Backend Package Overview - All Java Source Files
+skinparam packageStyle rectangle
+
+package "com.example.nextoffer" {
+  class NextOfferApplication <<SpringBootApplication, EnableScheduling>>
+
+  package "auth" {
+    class AuthController <<RestController>>
+    class AuthExceptionHandler <<RestControllerAdvice>>
+    class AuthService <<Service>>
+    class AuthUserDetails
+    class AuthUserDetailsService <<Service>>
+    class EmailAlreadyRegisteredException
+    class InvalidCredentialsException
+    class JwtAuthenticationFilter <<Component>>
+    class JwtService <<Service>>
+    class SecurityConfig <<Configuration>>
+    package "auth.dto" {
+      class AuthResponse <<record>>
+      class LoginRequest <<record>>
+      class RegisterRequest <<record>>
+      class UserResponse <<record>>
+    }
+  }
+
+  package "user" {
+    class User <<Entity>>
+    interface UserRepository <<JpaRepository>>
+  }
+
+  package "career" {
+    interface AtsIntegrationFactory <<Abstract Factory>>
+    enum AtsType
+    class AtsTypeDetector
+    class CachingCareerPageProxy <<Proxy>>
+    class CareerPageFetchException
+    interface CareerPageFetchStrategy <<Strategy>>
+    class CareerPageFetchStrategyFactory
+    interface CareerPageFetcher
+    abstract class CareerPageFetcherFactory <<Factory Method>>
+    class CompanyBrandingFlyweight <<record>> <<Flyweight>>
+    class CompanyBrandingFlyweightFactory <<Flyweight Factory>>
+    class DefaultCareerPageFetcherFactory
+    class GreenhouseBoardTokenResolver
+    class GreenhouseFetchStrategy
+    class GreenhouseIntegrationFactory
+    class GreenhouseJobAdapter <<Adapter>>
+    interface JobDescriptionParser
+    interface JobPostingNormalizer
+    class SmartRecruitersFetchStrategy
+    class SmartRecruitersIntegrationFactory
+    class SmartRecruitersUrlResolver
+    class WorkdayFetchStrategy
+    class WorkdayIntegrationFactory
+    class WorkdayUrlResolver
+  }
+
+  package "job" {
+    class JobPosting <<Entity>>
+    class JobPostingController <<RestController>>
+    abstract class JobPostingDecorator <<Decorator>>
+    class JobPostingDto <<record>>
+    class JobPostingNotFoundException
+    interface JobPostingRepository <<JpaRepository>>
+    class JobPostingResponse <<record>>
+    class JobPostingService <<Service>>
+    class JobResumeController <<RestController>>
+    class MatchScoreJobDecorator
+  }
+
+  package "watch" {
+    class CompanyWatch <<Entity>>
+    class CompanyWatchController <<RestController>>
+    interface CompanyWatchRepository <<JpaRepository>>
+    class CompanyWatchService <<Service>>
+    class CompanyWatchSubject <<Observer Subject>>
+    interface JobDiscoveryListener <<Observer>>
+    class JobDiscoveryPersistenceListener
+    class JobIngestionMediator <<Mediator>>
+    class JobObserverService <<Service>>
+    class JobPollingScheduler <<Scheduler>>
+    class JobWatchFilter
+    enum ScanStatus
+    class WatchConfig <<Configuration>>
+    class WatchExceptionHandler <<RestControllerAdvice>>
+    class WatchNotFoundException
+    class WatchPollException
+    package "watch.dto" {
+      class CompanyWatchResponse <<record>>
+      class CreateCompanyWatchRequest <<record>>
+      class PollWatchResponse <<record>>
+      class UpdateCompanyWatchRequest <<record>>
+    }
+  }
+
+  package "tracker" {
+    interface ApplicationState <<State>>
+    class ApplicationStates
+    enum ApplicationStatus
+    class ApplicationTrackerContext <<State Context>>
+    class ApplicationTrackerController <<RestController>>
+    class ApplicationTrackerService <<Service>>
+    class AppliedApplicationState
+    class NewApplicationState
+    class RejectedApplicationState
+    class ViewedApplicationState
+    package "tracker.dto" {
+      class UpdateApplicationStatusRequest <<record>>
+    }
+  }
+
+  package "resume" {
+    abstract class AbstractTailoringPipeline <<Template Method>>
+    class AtsLengthValidationHandler
+    class BaseResume <<Entity>>
+    class BaseResumeNotFoundException
+    interface BaseResumeRepository <<JpaRepository>>
+    class BulletOrderMerger
+    class CommandInvoker <<Command Invoker>>
+    class LatexDocumentBuilder
+    class LatexEscaper
+    class LatexExportVisitor <<Visitor>>
+    class LatexFinalizeService <<Service>>
+    class LatexResumeParser
+    class LatexResumeRenderer <<Bridge Implementor>>
+    class LatexResumeUpdater
+    class LatexSanitizer
+    class LatexSectionScanner
+    class NoFabricationValidationHandler
+    class NullResumeSection <<Null Object>>
+    class OpenAiClient <<Service>>
+    class OpenAiTailoringPipeline
+    class PdfCompileService <<Service>>
+    interface ResumeCommand <<Command>>
+    class ResumeController <<RestController>>
+    class ResumeExceptionHandler <<RestControllerAdvice>>
+    class ResumeFileNotFoundException
+    class ResumeGenerationException
+    class ResumeHistoryCaretaker <<Memento Caretaker>>
+    enum ResumeOutputStatus
+    interface ResumeRenderer <<Bridge>>
+    interface ResumeSectionComponent <<Composite>>
+    class ResumeSectionGroup
+    class ResumeSectionIterator <<Iterator>>
+    class ResumeSectionLeaf
+    interface ResumeSectionVisitor <<Visitor>>
+    class ResumeService <<Service>>
+    enum ResumeSourceFormat
+    class ResumeTailoringFacade <<Facade>>
+    class ResumeTemplatePrototype <<Prototype>>
+    class ResumeTextParser
+    abstract class ResumeValidationHandler <<Chain of Responsibility>>
+    class ResumeVersionMemento <<record>> <<Memento>>
+    class RuleBasedTailoringPipeline
+    class TailorResumeCommand
+    class TailoredResume <<Entity>>
+    class TailoredResumeBuilder <<Builder>>
+    class TailoredResumeContent <<record>>
+    class TailoredResumeNotFoundException
+    interface TailoredResumeRepository <<JpaRepository>>
+    package "resume.dto" {
+      class BaseResumeResponse <<record>>
+      class SaveBaseResumeRequest <<record>>
+      class TailoredResumeDetailResponse <<record>>
+      class TailoredResumeResponse <<record>>
+    }
+  }
+
+  package "config" {
+    class JacksonConfig <<Configuration>>
+    class JobPostingTrackerSchemaMigration <<ApplicationRunner>>
+  }
+}
+
+NextOfferApplication "1" ..> "1" AuthController : dependency scans
+NextOfferApplication "1" ..> "1" CompanyWatchController : dependency scans
+NextOfferApplication "1" ..> "1" JobPostingController : dependency scans
+NextOfferApplication "1" ..> "1" ResumeController : dependency scans
+NextOfferApplication "1" ..> "1" ApplicationTrackerController : dependency scans
+@enduml
+
+@startuml NextOffer_Career_Module
+title Career Module - Factory, Abstract Factory, Strategy, Adapter, Proxy, Flyweight
+skinparam classAttributeIconSize 0
+
+package "career" {
+  enum AtsType {
+    GREENHOUSE
+    WORKDAY
+    SMART_RECRUITERS
+    LEVER
+    CUSTOM_HTML
+  }
+
+  interface CareerPageFetcher {
+    +fetch(careerPageUrl: String): String
+  }
+
+  abstract class CareerPageFetcherFactory <<Factory Method>> {
+    +createFetcher(atsType: AtsType): CareerPageFetcher
+    #createCustomFetcher(atsType: AtsType): CareerPageFetcher
+  }
+
+  class DefaultCareerPageFetcherFactory {
+    #createCustomFetcher(atsType: AtsType): CareerPageFetcher
+  }
+
+  interface AtsIntegrationFactory <<Abstract Factory>> {
+    +createFetcher(): CareerPageFetcher
+    +createParser(): JobDescriptionParser
+    +createNormalizer(): JobPostingNormalizer
+  }
+
+  class GreenhouseIntegrationFactory
+  class WorkdayIntegrationFactory
+  class SmartRecruitersIntegrationFactory
+
+  interface CareerPageFetchStrategy <<Strategy>> {
+    +fetch(careerPageUrl: String): List~JobPostingDto~
+    +fetchForWatch(watch: CompanyWatch): List~JobPostingDto~
+  }
+
+  class CareerPageFetchStrategyFactory {
+    +forAtsType(atsType: AtsType): CareerPageFetchStrategy
+  }
+
+  class GreenhouseFetchStrategy
+  class WorkdayFetchStrategy
+  class SmartRecruitersFetchStrategy
+
+  class CachingCareerPageProxy <<Proxy>> {
+    -delegate: CareerPageFetcher
+    -cachedBody: String
+    +fetch(careerPageUrl: String): String
+  }
+
+  interface JobDescriptionParser {
+    +parse(raw: String): List~JobPostingDto~
+  }
+
+  class GreenhouseJobAdapter <<Adapter>> {
+    +parse(raw: String): List~JobPostingDto~
+  }
+
+  interface JobPostingNormalizer {
+    +normalize(posting: JobPostingDto): JobPostingDto
+  }
+
+  class CompanyBrandingFlyweight <<record>> <<Flyweight>> {
+    companyKey: String
+    displayName: String
+    logoUrl: String
+  }
+
+  class CompanyBrandingFlyweightFactory <<Flyweight Factory>> {
+    -cache: Map<String, CompanyBrandingFlyweight>
+    +get(companyName: String, logoUrl: String): CompanyBrandingFlyweight
+  }
+
+  class AtsTypeDetector {
+    +detect(url: String): AtsType
+  }
+
+  class GreenhouseBoardTokenResolver {
+    +resolve(url: String): String
+  }
+
+  class WorkdayUrlResolver
+  class SmartRecruitersUrlResolver
+  class CareerPageFetchException
+}
+
+DefaultCareerPageFetcherFactory --|> CareerPageFetcherFactory
+GreenhouseIntegrationFactory ..|> AtsIntegrationFactory : realizes
+WorkdayIntegrationFactory ..|> AtsIntegrationFactory : realizes
+SmartRecruitersIntegrationFactory ..|> AtsIntegrationFactory : realizes
+CareerPageFetcherFactory "1" ..> "1" AtsIntegrationFactory : creates vendor family
+CareerPageFetcherFactory "1" ..> "1" CareerPageFetcher : dependency creates
+AtsIntegrationFactory "1" ..> "1" CareerPageFetcher : dependency creates
+AtsIntegrationFactory "1" ..> "1" JobDescriptionParser : dependency creates
+AtsIntegrationFactory "1" ..> "1" JobPostingNormalizer : dependency creates
+
+CachingCareerPageProxy ..|> CareerPageFetcher : realizes
+CachingCareerPageProxy "1" o--> "1" CareerPageFetcher : delegate
+
+CareerPageFetchStrategyFactory "1" ..> "1" CareerPageFetchStrategy : selects
+CareerPageFetchStrategyFactory "1" ..> "1" AtsType : dependency switches on
+GreenhouseFetchStrategy ..|> CareerPageFetchStrategy : realizes
+WorkdayFetchStrategy ..|> CareerPageFetchStrategy : realizes
+SmartRecruitersFetchStrategy ..|> CareerPageFetchStrategy : realizes
+GreenhouseFetchStrategy "1" ..> "1" GreenhouseBoardTokenResolver : dependency resolves board
+WorkdayFetchStrategy "1" ..> "1" WorkdayUrlResolver : dependency resolves URL
+SmartRecruitersFetchStrategy "1" ..> "1" SmartRecruitersUrlResolver : dependency resolves URL
+
+GreenhouseJobAdapter ..|> JobDescriptionParser : realizes
+JobDescriptionParser "1" ..> "0..*" JobPostingDto : dependency emits DTOs
+JobPostingNormalizer "1" ..> "0..*" JobPostingDto : dependency normalizes DTOs
+CompanyBrandingFlyweightFactory "1" o--> "0..*" CompanyBrandingFlyweight : shared instances
+AtsTypeDetector "1" ..> "1" AtsType : dependency returns
+CareerPageFetchException --|> RuntimeException
+@enduml
+
+@startuml NextOffer_Watch_Job_Tracker
+title Watch, Job, and Tracker Modules - Observer, Mediator, Decorator, State
+skinparam classAttributeIconSize 0
+
+package "watch" {
+  class CompanyWatch <<Entity>> {
+    id: Long
+    companyName: String
+    careerPageUrl: String
+    boardToken: String
+    atsType: AtsType
+    enabled: boolean
+    roleKeyword: String
+    locationKeyword: String
+    remoteOnly: boolean
+    scanStatus: ScanStatus
+  }
+
+  enum ScanStatus {
+    NEVER_SCANNED
+    SUCCESS
+    FAILED
+  }
+
+  interface CompanyWatchRepository <<JpaRepository>>
+
+  class CompanyWatchController <<RestController>> {
+    +list(): List~CompanyWatchResponse~
+    +create(request: CreateCompanyWatchRequest): CompanyWatchResponse
+    +get(id: Long): CompanyWatchResponse
+    +update(id: Long, request: UpdateCompanyWatchRequest): CompanyWatchResponse
+    +delete(id: Long): void
+    +poll(id: Long): PollWatchResponse
+  }
+
+  class CompanyWatchService <<Service>> {
+    +list(): List~CompanyWatchResponse~
+    +create(request): CompanyWatchResponse
+    +update(id, request): CompanyWatchResponse
+    +delete(id): void
+    +poll(id): PollWatchResponse
+  }
+
+  class JobPollingScheduler <<Scheduler>> {
+    +pollEnabledWatches(): void
+  }
+
+  class JobIngestionMediator <<Mediator>> {
+    +pollWatch(watch, knownExternalIds, notifyListeners): List~JobPostingDto~
+  }
+
+  class CompanyWatchSubject <<Observer Subject>> {
+    -listeners: List~JobDiscoveryListener~
+    +subscribe(listener): void
+    +notifyNewJob(job, companyWatchId): void
+  }
+
+  interface JobDiscoveryListener <<Observer>> {
+    +onNewJobDiscovered(job, companyWatchId): void
+  }
+
+  class JobDiscoveryPersistenceListener {
+    +onNewJobDiscovered(job, companyWatchId): void
+  }
+
+  class JobObserverService <<Service>>
+  class JobWatchFilter {
+    +apply(watch, jobs): List~JobPostingDto~
+  }
+
+  class WatchConfig <<Configuration>>
+  class WatchExceptionHandler <<RestControllerAdvice>>
+  class WatchNotFoundException
+  class WatchPollException
+
+  class CreateCompanyWatchRequest <<record>>
+  class UpdateCompanyWatchRequest <<record>>
+  class CompanyWatchResponse <<record>>
+  class PollWatchResponse <<record>>
+}
+
+package "job" {
+  class JobPosting <<Entity>> {
+    id: Long
+    companyWatch: CompanyWatch
+    externalId: String
+    title: String
+    company: String
+    location: String
+    url: String
+    description: String
+    applicationStatus: ApplicationStatus
+    firstSeenAt: Instant
+  }
+
+  interface JobPostingRepository <<JpaRepository>>
+
+  class JobPostingController <<RestController>> {
+    +list(): List~JobPostingResponse~
+    +get(id): JobPostingResponse
+  }
+
+  class JobResumeController <<RestController>> {
+    +generateForJob(id): TailoredResumeResponse
+  }
+
+  class JobPostingService <<Service>> {
+    +list(): List~JobPostingResponse~
+    +get(id): JobPostingResponse
+    +findDto(id): JobPostingDto
+  }
+
+  class JobPostingDto <<record>>
+  class JobPostingResponse <<record>>
+  class JobPostingNotFoundException
+
+  abstract class JobPostingDecorator <<Decorator>> {
+    #delegate: JobPostingDto
+    +getDelegate(): JobPostingDto
+    +displayTitle(): String
+  }
+
+  class MatchScoreJobDecorator {
+    -matchPercent: int
+    +displayTitle(): String
+    +getMatchPercent(): int
+  }
+}
+
+package "tracker" {
+  enum ApplicationStatus {
+    NEW
+    VIEWED
+    APPLIED
+    REJECTED
+  }
+
+  interface ApplicationState <<State>> {
+    +getStatus(): ApplicationStatus
+    +view(context): void
+    +apply(context): void
+    +reject(context): void
+  }
+
+  class ApplicationTrackerContext <<State Context>> {
+    -state: ApplicationState
+    +fromStatus(status): ApplicationTrackerContext
+    +getStatus(): ApplicationStatus
+    +setState(state): void
+    +view(): void
+    +apply(): void
+    +reject(): void
+    +transitionTo(target): void
+  }
+
+  class ApplicationStates {
+    +from(status): ApplicationState
+  }
+
+  class NewApplicationState
+  class ViewedApplicationState
+  class AppliedApplicationState
+  class RejectedApplicationState
+
+  class ApplicationTrackerController <<RestController>> {
+    +updateStatus(id, request): JobPostingResponse
+  }
+
+  class ApplicationTrackerService <<Service>> {
+    +updateStatus(id, target): JobPostingResponse
+  }
+
+  class UpdateApplicationStatusRequest <<record>>
+}
+
+CompanyWatchController "1" --> "1" CompanyWatchService : delegates
+CompanyWatchService "1" --> "1" CompanyWatchRepository : persists watches
+CompanyWatchService "1" --> "1" JobPostingRepository : reads known jobs
+CompanyWatchService "1" --> "1" JobIngestionMediator : coordinates polling
+JobPollingScheduler "1" --> "1" CompanyWatchService : triggers scheduled polls
+JobPollingScheduler "1" --> "1" JobIngestionMediator : coordinates scheduled ingestion
+JobIngestionMediator "1" --> "1" CareerPageFetchStrategyFactory : selects strategy
+JobIngestionMediator "1" --> "1" CompanyWatchSubject : publishes new jobs
+JobIngestionMediator "1" ..> "1" JobWatchFilter : dependency filters
+CompanyWatchSubject "1" o--> "0..*" JobDiscoveryListener : observers
+JobDiscoveryPersistenceListener ..|> JobDiscoveryListener : realizes
+JobDiscoveryPersistenceListener "1" --> "1" CompanyWatchRepository : loads watch
+JobDiscoveryPersistenceListener "1" --> "1" JobPostingRepository : saves posting
+
+JobPosting "0..*" --> "1" CompanyWatch : belongs to
+JobPostingController "1" --> "1" JobPostingService : delegates
+JobResumeController "1" --> "1" ResumeService : delegates resume generation
+JobPostingService "1" --> "1" JobPostingRepository : queries
+JobPostingRepository "1" --> "0..*" JobPosting : manages
+MatchScoreJobDecorator --|> JobPostingDecorator
+JobPostingDecorator "1" o--> "1" JobPostingDto : wraps
+
+ApplicationTrackerController "1" --> "1" ApplicationTrackerService : delegates
+ApplicationTrackerService "1" --> "1" JobPostingRepository : updates job
+ApplicationTrackerService "1" --> "1" ApplicationTrackerContext : transitions
+ApplicationTrackerContext "1" o--> "1" ApplicationState : holds
+NewApplicationState ..|> ApplicationState : realizes
+ViewedApplicationState ..|> ApplicationState : realizes
+AppliedApplicationState ..|> ApplicationState : realizes
+RejectedApplicationState ..|> ApplicationState : realizes
+ApplicationStates "1" ..> "1" ApplicationState : dependency creates
+JobPosting "0..*" --> "1" ApplicationStatus : has status
+UpdateApplicationStatusRequest "1" --> "1" ApplicationStatus : carries target
+@enduml
+
+@startuml NextOffer_Resume_Module
+title Resume Module - Builder, Prototype, Bridge, Composite, Facade, Command, Chain, Template Method, Memento, Iterator, Visitor, Null Object
+skinparam classAttributeIconSize 0
+
+package "resume.entities" {
+  class BaseResume <<Entity>> {
+    id: Long
+    rawText: String
+    sourceFormat: ResumeSourceFormat
+  }
+
+  class TailoredResume <<Entity>> {
+    id: Long
+    jobPostingId: Long
+    content: TailoredResumeContent
+    latexSource: String
+    pdfPath: String
+    outputStatus: ResumeOutputStatus
+  }
+
+  class TailoredResumeContent <<record>> {
+    summary: String
+    skills: List~String~
+    experienceBullets: List~String~
+  }
+
+  enum ResumeOutputStatus {
+    PDF_READY
+    LATEX_ONLY
+    FAILED
+  }
+
+  enum ResumeSourceFormat {
+    TEXT
+    LATEX
+  }
+
+  interface BaseResumeRepository <<JpaRepository>>
+  interface TailoredResumeRepository <<JpaRepository>>
+}
+
+package "resume.api" {
+  class ResumeController <<RestController>> {
+    +saveBase(request): BaseResumeResponse
+    +listTailored(): List~TailoredResumeResponse~
+    +getTailored(id): TailoredResumeDetailResponse
+  }
+
+  class ResumeService <<Service>> {
+    +saveBaseResume(rawText): BaseResumeResponse
+    +listTailored(): List~TailoredResumeResponse~
+    +getTailored(id): TailoredResumeDetailResponse
+  }
+
+  class ResumeExceptionHandler <<RestControllerAdvice>>
+  class BaseResumeResponse <<record>>
+  class SaveBaseResumeRequest <<record>>
+  class TailoredResumeResponse <<record>>
+  class TailoredResumeDetailResponse <<record>>
+}
+
+package "resume.tailoring" {
+  class ResumeTailoringFacade <<Facade>> {
+    -tailoringPipeline: OpenAiTailoringPipeline
+    -validationChain: ResumeValidationHandler
+    +tailor(job, baseResume): TailoredResumeContent
+  }
+
+  abstract class AbstractTailoringPipeline <<Template Method>> {
+    +execute(job, baseResume): TailoredResumeContent
+    #extractKeywords(job): List~String~
+    #rewriteSummary(baseResume, keywords): String
+    #prioritizeBullets(baseResume, keywords): List~String~
+  }
+
+  class OpenAiTailoringPipeline
+  class RuleBasedTailoringPipeline
+  interface ResumeGenerator {
+    +generate(job, baseResume): TailoredResumeContent
+  }
+  class LLMResumeGenerator <<AI Integration>> {
+    -client: OpenAiClient
+    +generate(job, baseResume): TailoredResumeContent
+  }
+  class OpenAiClient <<Service>>
+  class TailoredResumeBuilder <<Builder>>
+  class ResumeTemplatePrototype <<Prototype>>
+  class BulletOrderMerger
+  class ResumeTextParser
+}
+
+package "resume.validation" {
+  abstract class ResumeValidationHandler <<Chain of Responsibility>> {
+    -next: ResumeValidationHandler
+    +linkWith(next): ResumeValidationHandler
+    +validate(content): void
+    #check(content): void
+  }
+
+  class NoFabricationValidationHandler
+  class AtsLengthValidationHandler
+}
+
+package "resume.rendering" {
+  interface ResumeRenderer <<Bridge>> {
+    +render(content): String
+  }
+
+  class LatexResumeRenderer <<Bridge Implementor>>
+  class LatexResumeParser
+  class LatexResumeUpdater
+  class LatexDocumentBuilder
+  class LatexFinalizeService <<Service>>
+  class PdfCompileService <<Service>>
+  class LatexSanitizer
+  class LatexEscaper
+  class LatexSectionScanner
+}
+
+package "resume.composite" {
+  interface ResumeSectionComponent <<Composite>> {
+    +getName(): String
+    +accept(visitor): void
+    +add(child): void
+  }
+
+  class ResumeSectionGroup {
+    -name: String
+    -children: List~ResumeSectionComponent~
+    +add(child): void
+    +getChildren(): List~ResumeSectionComponent~
+    +accept(visitor): void
+  }
+
+  class ResumeSectionLeaf {
+    -name: String
+    -content: String
+    +getContent(): String
+    +accept(visitor): void
+  }
+
+  class NullResumeSection <<Null Object>>
+
+  class ResumeSectionIterator <<Iterator>> {
+    +hasNext(): boolean
+    +next(): ResumeSectionComponent
+  }
+
+  interface ResumeSectionVisitor <<Visitor>> {
+    +visitGroup(group): void
+    +visitLeaf(leaf): void
+  }
+
+  class LatexExportVisitor <<Visitor>>
+}
+
+package "resume.command_memento" {
+  interface ResumeCommand <<Command>> {
+    +execute(): TailoredResumeContent
+    +undo(): TailoredResumeContent
+  }
+
+  class TailorResumeCommand {
+    -facade: ResumeTailoringFacade
+    -job: JobPostingDto
+    -baseResume: TailoredResumeContent
+    -before: TailoredResumeContent
+    -after: TailoredResumeContent
+  }
+
+  class CommandInvoker <<Command Invoker>> {
+    -history: Deque<ResumeCommand>
+    +run(command): TailoredResumeContent
+    +undoLast(): TailoredResumeContent
+  }
+
+  class ResumeVersionMemento <<record>> <<Memento>> {
+    content: TailoredResumeContent
+    savedAtEpochMs: long
+  }
+
+  class ResumeHistoryCaretaker <<Memento Caretaker>> {
+    -versions: List~ResumeVersionMemento~
+    +save(content): void
+    +restore(index): TailoredResumeContent
+  }
+}
+
+package "resume.exceptions" {
+  class BaseResumeNotFoundException
+  class TailoredResumeNotFoundException
+  class ResumeFileNotFoundException
+  class ResumeGenerationException
+}
+
+ResumeController "1" --> "1" SaveBaseResumeRequest : accepts DTO
+ResumeController "1" --> "1" BaseResumeResponse : returns DTO
+ResumeController "1" --> "0..*" TailoredResumeResponse : returns DTO
+ResumeController "1" --> "1" TailoredResumeDetailResponse : returns DTO
+ResumeController "1" --> "1" ResumeService : delegates with DTOs
+ResumeService "1" --> "1" BaseResumeRepository : persists base resume
+ResumeService "1" --> "1" TailoredResumeRepository : persists tailored resumes
+ResumeService "1" --> "1" ResumeTailoringFacade : tailors content
+ResumeService "1" --> "1" LatexFinalizeService : finalizes LaTeX
+ResumeService "1" --> "1" PdfCompileService : compiles PDF
+ResumeService "1" --> "1" LatexResumeParser : parses LaTeX source
+ResumeService "1" --> "1" ResumeTextParser : parses plain text
+ResumeService "1" --> "1" JobPostingRepository : loads job
+
+ResumeTailoringFacade "1" --> "1" OpenAiTailoringPipeline : delegates AI pipeline
+ResumeTailoringFacade "1" --> "1..*" ResumeValidationHandler : validates content
+OpenAiTailoringPipeline --|> AbstractTailoringPipeline
+RuleBasedTailoringPipeline --|> AbstractTailoringPipeline
+OpenAiTailoringPipeline "1" --> "1" ResumeGenerator : invokes
+LLMResumeGenerator ..|> ResumeGenerator : realizes
+LLMResumeGenerator "1" --> "1" OpenAiClient : calls LLM API
+AbstractTailoringPipeline "1" --> "1" TailoredResumeBuilder : builds content
+AbstractTailoringPipeline "1" --> "1" ResumeTemplatePrototype : clones template
+AbstractTailoringPipeline "1" --> "1" BulletOrderMerger : orders bullets
+
+NoFabricationValidationHandler --|> ResumeValidationHandler
+AtsLengthValidationHandler --|> ResumeValidationHandler
+ResumeValidationHandler "1" o--> "0..1" ResumeValidationHandler : next
+
+LatexResumeRenderer ..|> ResumeRenderer : realizes
+LatexFinalizeService "1" --> "1" LatexDocumentBuilder : builds document
+LatexFinalizeService "1" --> "1" LatexSanitizer : sanitizes
+LatexFinalizeService "1" --> "1" LatexResumeUpdater : updates source
+LatexResumeParser "1" --> "1" LatexSectionScanner : scans sections
+LatexResumeUpdater "1" --> "1" LatexEscaper : escapes text
+PdfCompileService "1" --> "0..*" TailoredResume : outputs files for
+
+ResumeSectionGroup ..|> ResumeSectionComponent : realizes
+ResumeSectionLeaf ..|> ResumeSectionComponent : realizes
+NullResumeSection ..|> ResumeSectionComponent : realizes
+ResumeSectionGroup "1" o--> "0..*" ResumeSectionComponent : children
+ResumeSectionIterator ..|> Iterator : realizes
+ResumeSectionIterator "1" --> "0..*" ResumeSectionComponent : traverses
+LatexExportVisitor ..|> ResumeSectionVisitor : realizes
+ResumeSectionComponent "1" ..> "1" ResumeSectionVisitor : dependency accepts
+
+TailorResumeCommand ..|> ResumeCommand : realizes
+TailorResumeCommand "1" --> "1" ResumeTailoringFacade : executes through
+CommandInvoker "1" o--> "0..*" ResumeCommand : history
+ResumeHistoryCaretaker "1" o--> "0..*" ResumeVersionMemento : snapshots
+ResumeVersionMemento "1" --> "1" TailoredResumeContent : stores
+
+BaseResumeRepository "1" --> "0..*" BaseResume : manages
+TailoredResumeRepository "1" --> "0..*" TailoredResume : manages
+TailoredResume "0..*" --> "1" TailoredResumeContent : stores
+TailoredResume "0..*" --> "1" ResumeOutputStatus : has output status
+BaseResume "0..*" --> "1" ResumeSourceFormat : has source format
+@enduml
+
+@startuml NextOffer_Auth_User_Config
+title Auth, User, and Config Modules
+skinparam classAttributeIconSize 0
+
+package "user" {
+  class User <<Entity>> {
+    id: Long
+    email: String
+    passwordHash: String
+    fullName: String
+    createdAt: Instant
+  }
+
+  interface UserRepository <<JpaRepository>> {
+    +findByEmail(email): Optional<User>
+    +existsByEmail(email): boolean
+  }
+}
+
+package "auth" {
+  class AuthController <<RestController>> {
+    +register(request): AuthResponse
+    +login(request): AuthResponse
+    +me(authentication): UserResponse
+  }
+
+  class AuthService <<Service>> {
+    +register(email, password, fullName): AuthResponse
+    +login(email, password): AuthResponse
+    +me(email): UserResponse
+  }
+
+  class JwtService <<Service>> {
+    +generateToken(user): String
+    +extractUsername(token): String
+    +isTokenValid(token, userDetails): boolean
+  }
+
+  class AuthUserDetailsService <<Service>> {
+    +loadUserByUsername(username): UserDetails
+  }
+
+  class AuthUserDetails {
+    -user: User
+    +getUsername(): String
+    +getPassword(): String
+    +getAuthorities(): Collection
+  }
+
+  class JwtAuthenticationFilter <<Component>> {
+    +doFilterInternal(request, response, chain): void
+  }
+
+  class SecurityConfig <<Configuration>> {
+    +securityFilterChain(http): SecurityFilterChain
+    +authenticationProvider(): AuthenticationProvider
+    +passwordEncoder(): PasswordEncoder
+  }
+
+  class AuthExceptionHandler <<RestControllerAdvice>>
+  class EmailAlreadyRegisteredException
+  class InvalidCredentialsException
+
+  class RegisterRequest <<record>> {
+    email: String
+    password: String
+    fullName: String
+  }
+
+  class LoginRequest <<record>> {
+    email: String
+    password: String
+  }
+
+  class AuthResponse <<record>> {
+    token: String
+    user: UserResponse
+  }
+
+  class UserResponse <<record>> {
+    id: Long
+    email: String
+    fullName: String
+    createdAt: Instant
+  }
+}
+
+package "config" {
+  class JacksonConfig <<Configuration>>
+  class JobPostingTrackerSchemaMigration <<ApplicationRunner>>
+}
+
+AuthController --> AuthService
+AuthService --> UserRepository
+AuthService --> JwtService
+AuthService --> AuthUserDetails
+AuthUserDetails --> User
+AuthUserDetailsService --> UserRepository
+JwtAuthenticationFilter --> JwtService
+JwtAuthenticationFilter --> AuthUserDetailsService
+SecurityConfig --> JwtAuthenticationFilter
+SecurityConfig --> AuthUserDetailsService
+SecurityConfig --> UserRepository
+UserRepository --> User
+AuthResponse --> UserResponse
+EmailAlreadyRegisteredException --|> RuntimeException
+InvalidCredentialsException --|> RuntimeException
+JobPostingTrackerSchemaMigration --> JobPostingRepository
+@enduml
+
+@startuml NextOffer_Frontend
+title Frontend - React Components, Context Providers, API Clients, Libs, and Types
+skinparam componentStyle rectangle
+
+package "NextOffer-FE/src" {
+  component "main.tsx" as Main
+  component "App.tsx\nApp(), emptyJob(), pageTitle()" as App
+  component "types.ts\nView, JobStatus, Job, ResumeVersion" as Types
+
+  package "context" {
+    component "AuthContext.tsx\nAuthProvider, useAuth, formatAuthError\nAuthContextValue" as AuthContext <<Provider/Observer>>
+    component "AppDataContext.tsx\nAppDataProvider, useAppData\nAppDataContextValue" as AppDataContext <<Provider/Observer>>
+  }
+
+  package "pages" {
+    component "AuthScreen.tsx\nAuthScreen()" as AuthScreen
+    component "DashboardPage.tsx\nDashboardPage()" as DashboardPage
+    component "JobsPage.tsx\nJobsPage()" as JobsPage
+    component "ResumesPage.tsx\nResumesPage(), statusClassName()" as ResumesPage
+    component "TrackerPage.tsx\nTrackerPage(), COLUMN_META" as TrackerPage
+    component "SettingsPage.tsx\nSettingsPage(), filtersFromWatch(),\nformatActiveFilters(), formatLastScan()" as SettingsPage
+  }
+
+  package "components" {
+    component "ActivityPanel.tsx\nActivityPanel()" as ActivityPanel
+    component "JobDetailPanel.tsx\nJobDetailPanel()" as JobDetailPanel
+    component "JobList.tsx\nJobList()" as JobList
+    component "Metric.tsx\nMetric()" as Metric
+    component "PanelHeader.tsx\nPanelHeader()" as PanelHeader
+    component "ResumePanel.tsx\nResumePanel(), formatCreated(),\nstatusLabel(), formatLabel(), detectFormat()" as ResumePanel
+    component "ResumeViewer.tsx\nResumeViewer(), RenderedResumeDocument(),\nformatCreated()" as ResumeViewer
+    component "ResumeViewerModal.tsx\nResumeViewerModal()" as ResumeViewerModal
+  }
+
+  package "api" {
+    component "client.ts\nApiError, getStoredToken(), setStoredToken(), apiFetch()" as ApiClient
+    component "auth.ts\nregister(), login(), getMe()" as ApiAuth
+    component "jobs.ts\nlistJobs(), getJob(), updateApplicationStatus()" as ApiJobs
+    component "resumes.ts\ngetBaseResume(), saveBaseResume(), listTailoredResumes(),\ngetTailoredResume(), generateResumeForJob(),\ncompileTailoredResumePdf(), downloadTailoredResume(),\nisBaseResumeMissing()" as ApiResumes
+    component "watches.ts\nlistWatches(), createWatch(), updateWatch(),\ndeleteWatch(), pollWatch()" as ApiWatches
+    component "types.ts\nAuthUser, AuthResponse, CompanyWatch,\nApplicationStatus, JobPosting, CreateWatchRequest,\nUpdateWatchRequest, ApiProblem, ResumeOutputStatus,\nResumeSourceFormat, BaseResume, TailoredResumeContent,\nTailoredResumeSummary, TailoredResumeDetail" as ApiTypes
+  }
+
+  package "lib" {
+    component "mappers.ts\nmapJobPosting(), formatFirstSeen()" as Mappers
+    component "trackerStatus.ts\ntoApiApplicationStatus(), fromApiApplicationStatus(),\nTRACKER_STATUSES" as TrackerStatus
+    component "resumeViewer.ts\nResumeViewerTarget, latestTailoredForJob(),\ngetResumePdfPreviewUrl(), useResumeViewerData()" as ResumeViewerLib
+    component "latexPreview.ts\nParsedResumePreview, parseLatexForPreview(),\nformatLineForDisplay(), parsePlainTextForPreview(),\nstripLatex(), detectSectionTitle()" as LatexPreview
+  }
+
+  package "data" {
+    component "mockData.ts\nnavItems, jobs, resumeVersions,\nactivity, integrationNotes" as MockData
+  }
+}
+
+Main --> App
+Main --> AuthContext
+Main --> AppDataContext
+App --> AuthContext
+App --> AppDataContext
+App --> AuthScreen
+App --> DashboardPage
+App --> JobsPage
+App --> ResumesPage
+App --> TrackerPage
+App --> SettingsPage
+App --> Types
+App --> MockData
+
+DashboardPage --> JobList
+DashboardPage --> JobDetailPanel
+DashboardPage --> ResumePanel
+DashboardPage --> ActivityPanel
+DashboardPage --> Metric
+JobsPage --> JobList
+JobsPage --> JobDetailPanel
+ResumesPage --> ResumePanel
+TrackerPage --> TrackerStatus
+SettingsPage --> AppDataContext
+SettingsPage --> ApiTypes
+
+ResumePanel --> ApiResumes
+ResumePanel --> ResumeViewerModal
+ResumeViewerModal --> ResumeViewer
+ResumeViewer --> ResumeViewerLib
+ResumeViewer --> LatexPreview
+
+AuthContext --> ApiAuth
+AppDataContext --> ApiJobs
+AppDataContext --> ApiWatches
+AppDataContext --> ApiResumes
+AppDataContext --> Mappers
+ApiAuth --> ApiClient
+ApiJobs --> ApiClient
+ApiWatches --> ApiClient
+ApiResumes --> ApiClient
+ApiClient --> ApiTypes
+Mappers --> ApiTypes
+Mappers --> Types
+TrackerStatus --> ApiTypes
+TrackerStatus --> Types
+ResumeViewerLib --> ApiResumes
+ResumeViewerLib --> ApiTypes
+MockData --> Types
+@enduml
+
+@startuml NextOffer_Design_Pattern_Map
+title Design Pattern Map - Where Each Pattern Is Applied
+skinparam packageStyle rectangle
+
+package "Creational Patterns" {
+  class "Factory Method\nCareerPageFetcherFactory\nDefaultCareerPageFetcherFactory" as FactoryMethod
+  class "Abstract Factory\nAtsIntegrationFactory\nGreenhouseIntegrationFactory\nWorkdayIntegrationFactory\nSmartRecruitersIntegrationFactory" as AbstractFactory
+  class "Builder\nTailoredResumeBuilder" as Builder
+  class "Prototype\nResumeTemplatePrototype" as Prototype
+}
+
+package "Structural Patterns" {
+  class "Adapter\nGreenhouseJobAdapter\nJobDescriptionParser" as Adapter
+  class "Bridge\nResumeRenderer\nLatexResumeRenderer" as Bridge
+  class "Composite\nResumeSectionComponent\nResumeSectionGroup\nResumeSectionLeaf" as Composite
+  class "Decorator\nJobPostingDecorator\nMatchScoreJobDecorator" as Decorator
+  class "Facade\nResumeTailoringFacade" as Facade
+  class "Flyweight\nCompanyBrandingFlyweight\nCompanyBrandingFlyweightFactory" as Flyweight
+  class "Proxy\nCachingCareerPageProxy\nCareerPageFetcher" as Proxy
+}
+
+package "Behavioral Patterns" {
+  class "Observer\nCompanyWatchSubject\nJobDiscoveryListener\nJobDiscoveryPersistenceListener" as Observer
+  class "Strategy\nCareerPageFetchStrategy\nGreenhouse/Workday/SmartRecruiters Strategies" as Strategy
+  class "State\nApplicationTrackerContext\nApplicationState\nNew/Viewed/Applied/Rejected States" as State
+  class "Command\nResumeCommand\nTailorResumeCommand\nCommandInvoker" as Command
+  class "Chain of Responsibility\nResumeValidationHandler\nNoFabricationValidationHandler\nAtsLengthValidationHandler" as Chain
+  class "Template Method\nAbstractTailoringPipeline\nOpenAiTailoringPipeline\nRuleBasedTailoringPipeline" as TemplateMethod
+  class "Memento\nResumeVersionMemento\nResumeHistoryCaretaker" as Memento
+  class "Mediator\nJobIngestionMediator" as Mediator
+  class "Iterator\nResumeSectionIterator" as IteratorPattern
+  class "Visitor\nResumeSectionVisitor\nLatexExportVisitor" as Visitor
+  class "Null Object\nNullResumeSection" as NullObject
+}
+
+FactoryMethod --> AbstractFactory : creates ATS-specific families
+AbstractFactory --> Proxy : creates cached/lazy fetchers
+Proxy --> Strategy : fetch behavior selected by ATS
+Strategy --> Adapter : raw ATS data normalized into internal DTO
+Adapter --> Mediator : discovered jobs passed into polling flow
+Mediator --> Observer : notifies listeners
+Observer --> Facade : downstream resume generation can be triggered
+Facade --> TemplateMethod
+Facade --> Chain
+TemplateMethod --> Builder
+TemplateMethod --> Prototype
+Bridge --> Composite : renders section tree/content
+Composite --> IteratorPattern
+Composite --> Visitor
+Command --> Facade
+Memento --> Command
+State --> Decorator : tracker status and display metadata enrich job workflow
+Flyweight --> Decorator : shared company branding can support job cards
+NullObject --> Composite
+@enduml
+
+@startuml NextOffer_Auth_Sequence
+title Auth Flow - Register/Login and JWT-Protected Calls
+actor User
+participant "AuthScreen.tsx" as AuthScreen
+participant "AuthContext.tsx" as AuthContext
+participant "api/auth.ts" as ApiAuth
+participant "api/client.ts" as ApiClient
+participant "AuthController" as AuthController
+participant "AuthService" as AuthService
+participant "UserRepository" as UserRepository
+participant "JwtService" as JwtService
+participant "Browser localStorage" as LocalStorage
+
+User -> AuthScreen : enter credentials
+AuthScreen -> AuthContext : login/register
+AuthContext -> ApiAuth : login() or register()
+ApiAuth -> ApiClient : apiFetch("/api/auth/login|register")
+ApiClient -> AuthController : POST /api/auth/login or /register
+AuthController -> AuthService : login/register
+AuthService -> UserRepository : findByEmail/existsByEmail/save
+AuthService -> JwtService : generateToken(user)
+JwtService --> AuthService : JWT
+AuthService --> AuthController : AuthResponse
+AuthController --> ApiClient : token + user
+ApiClient --> ApiAuth : AuthResponse
+ApiAuth --> AuthContext : AuthResponse
+AuthContext -> LocalStorage : setStoredToken(token)
+AuthContext --> AuthScreen : authenticated state
+
+participant "AppDataContext.tsx" as AppDataContext
+participant "JwtAuthenticationFilter" as JwtFilter
+participant "JobPostingController" as JobController
+AppDataContext -> ApiClient : apiFetch("/api/jobs")
+ApiClient -> JwtFilter : Authorization: Bearer token
+JwtFilter -> JwtService : validate token
+JwtFilter -> JobController : authenticated request
+@enduml
+
+@startuml NextOffer_Watch_Polling_Sequence
+title Watch Polling Flow - Scheduler/API to New Job Persistence
+actor User
+participant "SettingsPage.tsx" as SettingsPage
+participant "api/watches.ts" as ApiWatches
+participant "CompanyWatchController" as WatchController
+participant "CompanyWatchService" as WatchService
+participant "CompanyWatchRepository" as WatchRepo
+participant "JobPostingRepository" as JobRepo
+participant "JobIngestionMediator\n<<Mediator>>" as Mediator
+participant "CareerPageFetchStrategyFactory" as StrategyFactory
+participant "CareerPageFetchStrategy\n<<Strategy>>" as Strategy
+participant "JobWatchFilter" as Filter
+participant "CompanyWatchSubject\n<<Observer Subject>>" as Subject
+participant "JobDiscoveryPersistenceListener\n<<Observer>>" as Listener
+
+User -> SettingsPage : click poll watch
+SettingsPage -> ApiWatches : pollWatch(id)
+ApiWatches -> WatchController : POST /api/watches/{id}/poll
+WatchController -> WatchService : poll(id)
+WatchService -> WatchRepo : findById(id)
+WatchService -> JobRepo : find known external ids
+WatchService -> Mediator : pollWatch(watch, knownIds, true)
+Mediator -> StrategyFactory : forAtsType(watch.atsType)
+StrategyFactory --> Mediator : Greenhouse/Workday/SmartRecruiters strategy
+Mediator -> Strategy : fetchForWatch(watch)
+Strategy --> Mediator : List~JobPostingDto~
+Mediator -> Filter : apply(watch, fetchedJobs)
+Filter --> Mediator : filtered jobs
+loop for each new externalId
+  Mediator -> Subject : notifyNewJob(job, watchId)
+  Subject -> Listener : onNewJobDiscovered(job, watchId)
+  Listener -> WatchRepo : findById(watchId)
+  Listener -> JobRepo : existsByCompanyWatchIdAndExternalId(...)
+  Listener -> JobRepo : save(new JobPosting(watch, job))
+end
+Mediator --> WatchService : newJobs
+WatchService --> WatchController : PollWatchResponse
+WatchController --> SettingsPage : new jobs summary
+@enduml
+
+@startuml NextOffer_Resume_Generation_Sequence
+title Resume Generation Flow - Facade, Template Method, Chain, Rendering
+actor User
+participant "ResumesPage/ResumePanel.tsx" as ResumeUI
+participant "api/resumes.ts" as ApiResumes
+participant "ResumeController" as ResumeController
+participant "ResumeService" as ResumeService
+participant "JobPostingRepository" as JobRepo
+participant "BaseResumeRepository" as BaseRepo
+participant "ResumeTailoringFacade\n<<Facade>>" as Facade
+participant "OpenAiTailoringPipeline\n<<Template Method>>" as Pipeline
+participant "OpenAiClient" as OpenAI
+participant "ResumeValidationHandler\n<<Chain>>" as Validation
+participant "LatexFinalizeService" as Finalize
+participant "PdfCompileService" as Pdf
+participant "TailoredResumeRepository" as TailoredRepo
+
+User -> ResumeUI : generate resume for selected job
+ResumeUI -> ApiResumes : generateResumeForJob(jobId)
+ApiResumes -> ResumeController : POST /api/resumes/jobs/{jobId}
+ResumeController -> ResumeService : generateForJob(jobId)
+ResumeService -> JobRepo : findById(jobId)
+ResumeService -> BaseRepo : find latest base resume
+ResumeService -> Facade : tailor(jobDto, baseContent)
+Facade -> Pipeline : execute(job, baseContent)
+Pipeline -> Pipeline : extractKeywords(job)
+Pipeline -> OpenAI : rewrite/prioritize content
+OpenAI --> Pipeline : tailored content
+Pipeline --> Facade : TailoredResumeContent
+Facade -> Validation : validate(content)
+Validation -> Validation : NoFabricationValidationHandler
+Validation -> Validation : AtsLengthValidationHandler
+Validation --> Facade : valid
+Facade --> ResumeService : TailoredResumeContent
+ResumeService -> Finalize : create/update LaTeX
+Finalize --> ResumeService : latex source
+ResumeService -> Pdf : compile(latex)
+Pdf --> ResumeService : pdf path/status
+ResumeService -> TailoredRepo : save(TailoredResume)
+TailoredRepo --> ResumeService : persisted resume
+ResumeService --> ResumeController : TailoredResumeResponse
+ResumeController --> ResumeUI : generated resume metadata
+@enduml
+
+@startuml NextOffer_Tracker_State_Sequence
+title Application Tracker Flow - State Pattern
+actor User
+participant "TrackerPage.tsx" as TrackerPage
+participant "api/jobs.ts" as ApiJobs
+participant "ApplicationTrackerController" as Controller
+participant "ApplicationTrackerService" as Service
+participant "JobPostingRepository" as JobRepo
+participant "ApplicationTrackerContext\n<<State Context>>" as Context
+participant "ApplicationState\n<<State>>" as State
+participant "ApplicationStates" as States
+
+User -> TrackerPage : move job to new status
+TrackerPage -> ApiJobs : updateApplicationStatus(id, target)
+ApiJobs -> Controller : PATCH /api/jobs/{id}/status
+Controller -> Service : updateStatus(id, target)
+Service -> JobRepo : findById(id)
+Service -> Context : fromStatus(currentStatus)
+Context -> States : from(currentStatus)
+States --> Context : New/Viewed/Applied/Rejected state
+Service -> Context : transitionTo(target)
+loop until target reached or correction required
+  Context -> State : view/apply/reject(context)
+  State -> Context : setState(nextState)
+end
+Service -> JobRepo : save(job with new ApplicationStatus)
+Service --> Controller : JobPostingResponse
+Controller --> TrackerPage : updated job
+@enduml
+
+@startuml NextOffer_Frontend_Data_Loading
+title Frontend Data Loading - Context as UI Observer/Provider
+actor User
+participant "main.tsx" as Main
+participant "AuthProvider" as AuthProvider
+participant "AppDataProvider" as AppDataProvider
+participant "App.tsx" as App
+participant "api/jobs.ts" as JobsApi
+participant "api/watches.ts" as WatchesApi
+participant "api/resumes.ts" as ResumesApi
+participant "mappers.ts" as Mappers
+participant "Dashboard/Jobs/Tracker/Settings Pages" as Pages
+
+User -> Main : open app
+Main -> AuthProvider : wrap application
+AuthProvider -> AppDataProvider : provide auth state to data layer
+AppDataProvider -> JobsApi : listJobs()
+AppDataProvider -> WatchesApi : listWatches()
+AppDataProvider -> ResumesApi : listTailoredResumes()
+JobsApi --> AppDataProvider : JobPosting[]
+AppDataProvider -> Mappers : mapJobPosting(dto)
+Mappers --> AppDataProvider : Job[]
+AppDataProvider -> App : context value
+App -> Pages : render selected view
+Pages -> AppDataProvider : useAppData()
+AppDataProvider --> Pages : jobs, watches, resumes, refresh/update actions
+@enduml
+
+@startuml NextOffer_Use_Case_Diagram
+title NextOffer - Use Case Diagram
+skinparam actorStyle awesome
+left to right direction
+
+actor "Student/Job Seeker" as Student
+actor "Administrator" as Admin
+actor "External System" as External
+
+rectangle "NextOffer System" {
+  usecase "Register & Login" as UC1
+  usecase "Manage Profile" as UC2
+  usecase "Create Company Watch" as UC3
+  usecase "Poll Career Pages" as UC4
+  usecase "View New Jobs" as UC5
+  usecase "Track Application Status" as UC6
+  usecase "Upload Resume" as UC7
+  usecase "Tailor Resume for Job" as UC8
+  usecase "Generate PDF Resume" as UC9
+  usecase "View Resume History" as UC10
+  usecase "Manage Dashboard" as UC11
+  usecase "Connect to ATS Systems" as UC12
+}
+
+Student --> UC1
+Student --> UC2
+Student --> UC3
+Student --> UC4
+Student --> UC5
+Student --> UC6
+Student --> UC7
+Student --> UC8
+Student --> UC9
+Student --> UC10
+Student --> UC11
+
+Admin --> UC12
+
+UC3 --> UC4
+UC4 --> UC5
+UC5 --> UC6
+UC6 --> UC8
+UC8 --> UC9
+UC8 --> UC10
+
+External --> UC12
+UC12 --> UC4
+
+@enduml
+
+@startuml NextOffer_Factory_Pattern
+title Factory Pattern - Career Page Fetcher Creation
+skinparam classAttributeIconSize 0
+
+package "Factory Pattern" {
+  enum AtsType {
+    GREENHOUSE
+    WORKDAY
+    SMART_RECRUITERS
+  }
+
+  interface CareerPageFetcher {
+    +fetch(url: String): String
+  }
+
+  class GreenhouseFetcher {
+    +fetch(url: String): String
+  }
+
+  class WorkdayFetcher {
+    +fetch(url: String): String
+  }
+
+  class SmartRecruitersFetcher {
+    +fetch(url: String): String
+  }
+
+  abstract class CareerPageFetcherFactory {
+    +createFetcher(type: AtsType): CareerPageFetcher
+  }
+
+  class DefaultCareerPageFetcherFactory {
+    +createFetcher(type: AtsType): CareerPageFetcher
+  }
+}
+
+GreenhouseFetcher ..|> CareerPageFetcher : realizes
+WorkdayFetcher ..|> CareerPageFetcher : realizes
+SmartRecruitersFetcher ..|> CareerPageFetcher : realizes
+DefaultCareerPageFetcherFactory --|> CareerPageFetcherFactory
+CareerPageFetcherFactory "1" ..> "1" CareerPageFetcher : creates
+CareerPageFetcherFactory "1" ..> "1" AtsType : uses
+
+@enduml
+
+@startuml NextOffer_Observer_Pattern
+title Observer Pattern - New Job Discovery Notifications
+skinparam classAttributeIconSize 0
+
+package "Observer Pattern" {
+  class CompanyWatchSubject {
+    -listeners: List~JobDiscoveryListener~
+    +subscribe(listener): void
+    +unsubscribe(listener): void
+    +notifyNewJob(job, watchId): void
+  }
+
+  interface JobDiscoveryListener {
+    +onNewJobDiscovered(job, watchId): void
+  }
+
+  class JobDiscoveryPersistenceListener {
+    -repository: JobPostingRepository
+    +onNewJobDiscovered(job, watchId): void
+  }
+
+  class JobObserverService {
+    +registerListener(listener): void
+  }
+
+  class JobPollingScheduler {
+    -subject: CompanyWatchSubject
+    +pollEnabledWatches(): void
+  }
+}
+
+JobDiscoveryPersistenceListener ..|> JobDiscoveryListener : realizes
+CompanyWatchSubject "1" o--> "0..*" JobDiscoveryListener : notifies
+JobDiscoveryPersistenceListener "1" --> "1" JobPostingRepository : persists through
+JobPollingScheduler "1" --> "1" CompanyWatchSubject : triggers polling
+JobObserverService "1" --> "1" CompanyWatchSubject : registers listeners
+
+@enduml
+
+@startuml NextOffer_Facade_Pattern
+title Facade Pattern - Resume Tailoring Simplified Interface
+skinparam classAttributeIconSize 0
+
+package "Facade Pattern" {
+  class ResumeTailoringFacade {
+    -pipeline: AbstractTailoringPipeline
+    -validationChain: ResumeValidationHandler
+    -renderer: ResumeRenderer
+    +tailor(job, baseResume): TailoredResumeContent
+  }
+
+  abstract class AbstractTailoringPipeline {
+    +execute(job, baseResume): TailoredResumeContent
+  }
+
+  class OpenAiTailoringPipeline {
+    -client: OpenAiClient
+    +execute(job, baseResume): TailoredResumeContent
+  }
+
+  abstract class ResumeValidationHandler {
+    +validate(content): void
+  }
+
+  class NoFabricationValidationHandler {
+    +validate(content): void
+  }
+
+  interface ResumeRenderer {
+    +render(content): String
+  }
+
+  class LatexResumeRenderer {
+    +render(content): String
+  }
+
+  class ResumeService {
+    -facade: ResumeTailoringFacade
+    +generateForJob(jobId): TailoredResumeResponse
+  }
+}
+
+OpenAiTailoringPipeline --|> AbstractTailoringPipeline
+NoFabricationValidationHandler --|> ResumeValidationHandler
+LatexResumeRenderer ..|> ResumeRenderer : realizes
+ResumeTailoringFacade "1" --> "1" AbstractTailoringPipeline : uses
+ResumeTailoringFacade "1" --> "1..*" ResumeValidationHandler : chains
+ResumeTailoringFacade "1" --> "1" ResumeRenderer : renders
+ResumeService "1" --> "1" ResumeTailoringFacade : delegates
+
+@enduml
+
+@startuml NextOffer_State_Pattern
+title State Pattern - Application Tracker Workflow
+skinparam classAttributeIconSize 0
+
+package "State Pattern" {
+  enum ApplicationStatus {
+    NEW
+    VIEWED
+    APPLIED
+    REJECTED
+  }
+
+  interface ApplicationState {
+    +getStatus(): ApplicationStatus
+    +view(context): void
+    +apply(context): void
+    +reject(context): void
+  }
+
+  class NewApplicationState {
+    +getStatus(): ApplicationStatus
+    +view(context): void
+    +apply(context): void
+    +reject(context): void
+  }
+
+  class ViewedApplicationState {
+    +getStatus(): ApplicationStatus
+    +apply(context): void
+    +reject(context): void
+  }
+
+  class AppliedApplicationState {
+    +getStatus(): ApplicationStatus
+    +reject(context): void
+  }
+
+  class RejectedApplicationState {
+    +getStatus(): ApplicationStatus
+  }
+
+  class ApplicationTrackerContext {
+    -state: ApplicationState
+    -jobPosting: JobPosting
+    +setState(state): void
+    +transitionTo(target: ApplicationStatus): void
+    +view(): void
+    +apply(): void
+    +reject(): void
+  }
+}
+
+NewApplicationState ..|> ApplicationState : realizes
+ViewedApplicationState ..|> ApplicationState : realizes
+AppliedApplicationState ..|> ApplicationState : realizes
+RejectedApplicationState ..|> ApplicationState : realizes
+ApplicationTrackerContext "1" o--> "1" ApplicationState : holds
+
+@enduml
+
+@startuml NextOffer_Chain_Pattern
+title Chain of Responsibility - Resume Validation
+skinparam classAttributeIconSize 0
+
+package "Chain of Responsibility Pattern" {
+  abstract class ResumeValidationHandler {
+    #next: ResumeValidationHandler
+    +linkWith(next): ResumeValidationHandler
+    +validate(content): void
+    #check(content): void
+  }
+
+  class NoFabricationValidationHandler {
+    #check(content): void
+  }
+
+  class AtsLengthValidationHandler {
+    #check(content): void
+  }
+
+  class RequiredSectionsValidationHandler {
+    #check(content): void
+  }
+
+  class TailoredResumeContent {
+    +summary: String
+    +skills: List~String~
+    +experienceBullets: List~String~
+  }
+
+  class ResumeTailoringFacade {
+    -validationChain: ResumeValidationHandler
+    +tailor(job, baseResume): TailoredResumeContent
+  }
+}
+
+NoFabricationValidationHandler --|> ResumeValidationHandler
+AtsLengthValidationHandler --|> ResumeValidationHandler
+RequiredSectionsValidationHandler --|> ResumeValidationHandler
+ResumeValidationHandler "1" o--> "0..1" ResumeValidationHandler : next handler
+ResumeValidationHandler "1" ..> "1" TailoredResumeContent : validates
+ResumeTailoringFacade "1" --> "1..*" ResumeValidationHandler : chains
+
+@enduml
+
+@startuml NextOffer_Builder_Pattern
+title Builder Pattern - Tailored Resume Construction
+skinparam classAttributeIconSize 0
+
+package "Builder Pattern" {
+  class TailoredResumeBuilder {
+    -summary: String
+    -skills: List~String~
+    -experienceBullets: List~String~
+    +summary(text: String): TailoredResumeBuilder
+    +addSkill(skill: String): TailoredResumeBuilder
+    +addBullet(bullet: String): TailoredResumeBuilder
+    +build(): TailoredResumeContent
+  }
+
+  class TailoredResumeContent {
+    +summary: String
+    +skills: List~String~
+    +experienceBullets: List~String~
+  }
+
+  abstract class AbstractTailoringPipeline {
+    +execute(job, baseResume): TailoredResumeContent
+    #buildContent(job): TailoredResumeBuilder
+  }
+
+  class OpenAiTailoringPipeline {
+    +execute(job, baseResume): TailoredResumeContent
+  }
+}
+
+OpenAiTailoringPipeline --|> AbstractTailoringPipeline
+AbstractTailoringPipeline "1" --> "1" TailoredResumeBuilder : builds with
+TailoredResumeBuilder "1" --> "1" TailoredResumeContent : creates
+
+@enduml
