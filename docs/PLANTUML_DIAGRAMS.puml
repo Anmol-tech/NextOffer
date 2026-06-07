@@ -17,7 +17,11 @@ package "Frontend - React/TypeScript" #E3F2FD {
 
   class AppDataContext {
     +refreshJobs()
-    +updateApplicationStatus()
+    +refreshWatches()
+    +refreshResumes()
+    +updateJobApplicationStatus()
+    +pollAllWatches()
+    +generateResumeForJob()
   }
 }
 
@@ -31,8 +35,11 @@ package "Backend - Controllers" #FFF9C4 {
 
   class CompanyWatchController {
     +list()
+    +get()
     +create()
-    +poll()
+    +update()
+    +delete()
+    +poll(id)
   }
 
   class JobPostingController {
@@ -40,9 +47,21 @@ package "Backend - Controllers" #FFF9C4 {
     +get()
   }
 
+  class JobResumeController {
+    +generate(jobId)
+  }
+
+  class ApplicationTrackerController {
+    +updateStatus(id, request)
+  }
+
   class ResumeController {
-    +generateForJob()
-    +saveBaseResume()
+    +saveBase()
+    +getBase()
+    +listTailored()
+    +getTailored()
+    +compilePdf()
+    +download()
   }
 }
 
@@ -71,7 +90,13 @@ package "Backend - Services" #F3E5F5 {
   class CompanyWatchService {
     +list()
     +create()
-    +poll()
+    +update()
+    +delete()
+  }
+
+  class JobObserverService {
+    +pollWatch(watchId, userId)
+    +pollAllEnabledWatches()
   }
 
   class JobPostingService {
@@ -79,9 +104,18 @@ package "Backend - Services" #F3E5F5 {
     +get()
   }
 
+  class ApplicationTrackerService {
+    +updateStatus(id, principal, status)
+  }
+
   class ResumeService {
+    +saveBaseResume()
+    +getBaseResume()
+    +listTailored()
+    +getTailored()
     +generateForJob()
-    +saveTailoredResume()
+    +compilePdf()
+    +download()
   }
 }
 
@@ -95,7 +129,7 @@ package "Backend - Enums and Records" #E8EAF6 {
     CUSTOM_HTML
   }
 
-  enum ApplicationState {
+  enum ApplicationStatus {
     NEW
     VIEWED
     APPLIED
@@ -193,13 +227,13 @@ package "Design Patterns - Behavioral" #F1F8E9 {
 }
 
 package "AI Integration" #EDE7F6 {
-  interface ResumeGenerator {
-    +generate(job, baseResume): TailoredResumeContent
+  abstract class AbstractTailoringPipeline {
+    +execute(job, baseResume): TailoredResumeContent
   }
 
-  class LLMResumeGenerator {
+  class OpenAiTailoringPipeline {
     -client: OpenAiClient
-    +generate(job, baseResume): TailoredResumeContent
+    +execute(job, baseResume): TailoredResumeContent
   }
 
   class OpenAiClient {
@@ -216,6 +250,8 @@ AppDataContext "1" --> "1" ResumeService : loads resumes
 AuthController "1" --> "1" AuthService : delegates
 CompanyWatchController "1" --> "1" CompanyWatchService : delegates
 JobPostingController "1" --> "1" JobPostingService : delegates
+JobResumeController "1" --> "1" ResumeService : delegates generation
+ApplicationTrackerController "1" --> "1" ApplicationTrackerService : delegates
 ResumeController "1" --> "1" ResumeService : delegates
 
 AuthController "1" --> "1" RegisterRequest : accepts
@@ -238,62 +274,21 @@ ResumeService "1" --> "1" BaseResume : reads
 CompanyWatch "1" --> "0..*" JobPosting : owns
 TailoredResume "0..*" --> "1" JobPosting : targets
 CompanyWatch "0..*" --> "1" AtsType : classified by
-JobPosting "0..*" --> "1" ApplicationState : tracked as
+JobPosting "0..*" --> "1" ApplicationStatus : tracked as
 TailoredResume "0..*" --> "1" TailoredResumeContent : stores
 
 CareerPageFetcherFactory "1" ..> "1" CompanyWatchService : dependency creates fetchers for
 CareerPageFetcherFactory "1" ..> "1" CareerPageFetcher : dependency creates
-LLMResumeGenerator ..|> ResumeGenerator : realizes
-LLMResumeGenerator "1" --> "1" OpenAiClient : uses
-ResumeService "1" --> "1" ResumeGenerator : delegates AI tailoring
+OpenAiTailoringPipeline --|> AbstractTailoringPipeline
+OpenAiTailoringPipeline "1" --> "1" OpenAiClient : uses
+ResumeTailoringFacade "1" --> "1" OpenAiTailoringPipeline : runs pipeline
+ResumeService "1" --> "1" ResumeTailoringFacade : delegates tailoring
 TailoredResumeBuilder "1" ..> "1" ResumeService : dependency builds content for
 ResumeTailoringFacade "1" ..> "1" ResumeService : dependency simplifies workflow for
 CachingCareerPageProxy "1" ..> "1" CompanyWatchService : dependency caches fetches for
 CompanyWatchSubject "1" ..> "1" CompanyWatchService : dependency notifies
-ApplicationTrackerContext "1" ..> "1" JobPostingService : dependency transitions status for
+ApplicationTrackerContext "1" ..> "1" ApplicationTrackerService : dependency transitions status for
 ResumeValidationHandler "1" ..> "1" ResumeTailoringFacade : dependency validates
-@enduml
-
-@startuml NextOffer_Use_Case_Diagram
-title Use Case Diagram - NextOffer System
-top to bottom direction
-skinparam backgroundColor #FEFEFE
-skinparam actorStyle awesome
-
-actor "Student/Job Seeker" as Student
-actor "Administrator" as Admin
-
-rectangle "NextOffer System" #E3F2FD {
-  (Register & Login) as UC1
-  (Manage Profile) as UC2
-  (Create Company Watch) as UC3
-  (Poll Career Pages) as UC4
-  (View New Jobs) as UC5
-  (Track Application Status) as UC6
-  (Upload Resume) as UC7
-  (Tailor Resume for Job) as UC8
-  (Generate PDF) as UC9
-  (View Resume History) as UC10
-}
-
-Student --> UC1
-Student --> UC2
-Student --> UC3
-Student --> UC6
-Student --> UC7
-Student --> UC8
-Student --> UC9
-Student --> UC10
-
-UC3 -.-> UC4 : includes
-UC4 -.-> UC5 : includes
-UC5 -.-> UC6 : extends
-UC6 -.-> UC8 : extends
-UC8 -.-> UC9 : includes
-UC8 -.-> UC10 : includes
-
-Admin -.-> UC4 : configures
-
 @enduml
 
 @startuml NextOffer_Factory_Pattern_Detail
@@ -366,14 +361,19 @@ class JobDiscoveryPersistenceListener {
 }
 
 class JobPollingScheduler {
-  -subject: CompanyWatchSubject
   +pollEnabledWatches(): void
+}
+
+class JobObserverService {
+  +pollAllEnabledWatches(): void
 }
 
 JobDiscoveryPersistenceListener ..|> JobDiscoveryListener : realizes
 CompanyWatchSubject "1" o--> "0..*" JobDiscoveryListener : notifies >
 JobDiscoveryPersistenceListener "1" --> "1" JobPostingRepository : persists through
-JobPollingScheduler "1" --> "1" CompanyWatchSubject : triggers polling
+JobPollingScheduler "1" --> "1" JobObserverService : triggers scheduled polls
+JobObserverService "1" --> "1" JobIngestionMediator : coordinates ingestion
+JobDiscoveryPersistenceListener "1" --> "1" CompanyWatchSubject : subscribes on startup
 
 @enduml
 
@@ -557,28 +557,23 @@ AbstractTailoringPipeline "1" --> "1" TailoredResumeBuilder : uses step-by-step
 @startuml NextOffer_Watch_Polling_Flow
 title Watch Polling Flow - Runtime Sequence
 participant "User" as EndUser
-participant "SettingsPage" as UI
-participant "WatchController" as Controller
-participant "WatchService" as Service
+participant "SettingsPage/JobsPage" as UI
+participant "CompanyWatchController" as Controller
+participant "JobObserverService" as ObserverService
 participant "JobIngestionMediator" as Mediator
 participant "CompanyWatchSubject" as Subject
-participant "JobDiscoveryListener" as Listener
+participant "JobDiscoveryPersistenceListener" as Listener
 participant "Database" as DB
 
-EndUser -> UI: Click Poll Watch
+EndUser -> UI: Click Poll Watch / Refresh Jobs
 UI -> Controller: POST /api/watches/{id}/poll
-Controller -> Service: poll(id)
-Service -> Mediator: pollWatch(watch, knownIds, notify)
-Mediator -> Subject: Fetches new jobs
-Subject -> Subject: Compares with known jobs
-alt New Jobs Found
-  Subject -> Listener: notifyNewJob(job)
-  Listener -> DB: save(JobPosting)
-  Listener --> Subject: persisted
-end
-Subject --> Service: newJobs[]
-Service --> Controller: PollWatchResponse
-Controller --> UI: Success - X new jobs
+Controller -> ObserverService: pollWatch(id, userId)
+ObserverService -> Mediator: pollWatch(watch, knownIds, notify)
+Mediator -> Subject: notifyNewJob(job, watchId) for each new job
+Subject -> Listener: onNewJobDiscovered(job, watchId)
+Listener -> DB: save(JobPosting)
+ObserverService --> Controller: PollResult
+Controller --> UI: PollWatchResponse
 UI --> EndUser: Display results
 
 @enduml
@@ -586,147 +581,33 @@ UI --> EndUser: Display results
 @startuml NextOffer_Resume_Tailoring_Flow
 title Resume Tailoring Flow - Runtime Sequence
 participant "User" as EndUser
-participant "ResumePage" as UI
-participant "ResumeController" as Controller
+participant "ResumesPage/JobDetailPanel" as UI
+participant "JobResumeController" as Controller
 participant "ResumeService" as Service
 participant "ResumeTailoringFacade" as Facade
-participant "OpenAiPipeline" as Pipeline
+participant "OpenAiTailoringPipeline" as Pipeline
 participant "OpenAI API" as OpenAI
-participant "ValidationChain" as Validation
-participant "LatexRenderer" as Renderer
-participant "PdfService" as Pdf
+participant "ResumeValidationHandler" as Validation
+participant "LatexFinalizeService" as Finalize
+participant "PdfCompileService" as Pdf
 participant "Database" as DB
 
 EndUser -> UI: Generate Resume for Job
-UI -> Controller: POST /api/resumes/jobs/{jobId}
+UI -> Controller: POST /api/jobs/{jobId}/resumes/generate
 Controller -> Service: generateForJob(jobId)
-Service -> Facade: tailor(job, baseResume)
-Facade -> Pipeline: execute(job, baseResume)
-Pipeline -> Pipeline: extractKeywords()
-Pipeline -> OpenAI: Send job + resume
-OpenAI --> Pipeline: Tailored content
+Service -> Facade: tailor(jobDto, baseContent)
+Facade -> Pipeline: execute(job, baseContent)
+Pipeline -> OpenAI: rewrite/prioritize content
+OpenAI --> Pipeline: TailoredResumeContent
 Facade -> Validation: validate(content)
-Validation -> Validation: Check chain
-Validation --> Facade: Valid
+Validation --> Facade: valid
 Facade --> Service: TailoredResumeContent
-Service -> Renderer: render(content)
-Renderer --> Service: LaTeX source
+Service -> Finalize: create/update LaTeX
 Service -> Pdf: compile(latex)
-Pdf --> Service: PDF file
 Service -> DB: save(TailoredResume)
-Service --> Controller: TailoredResumeResponse
+Service --> Controller: TailoredResumeDetailResponse
 Controller --> UI: Resume generated
 UI --> EndUser: Download/View
-
-@enduml
-
-@startuml NextOffer_Full_System
-title NextOffer Full System - Packages, Files, and Runtime Boundaries
-top to bottom direction
-skinparam packageStyle rectangle
-skinparam componentStyle rectangle
-skinparam backgroundColor #FEFEFE
-
-actor "Student/User" as User
-
-node "Frontend - React/TypeScript" #E3F2FD {
-  package "Browser" {
-    component "main.tsx" as FE_Main
-    component "App.tsx" as FE_App
-    package "Contexts" {
-      component "AuthContext" as FE_Auth
-      component "AppDataContext" as FE_Data
-    }
-    package "Pages" {
-      component "AuthScreen" as P1
-      component "Dashboard" as P2
-      component "Jobs" as P3
-      component "Resumes" as P4
-    }
-  }
-}
-
-node "Backend - Spring Boot" #FFF9C4 {
-  package "Controllers" {
-    component "AuthController" as C1
-    component "WatchController" as C2
-    component "JobController" as C3
-    component "ResumeController" as C4
-  }
-  package "Services" {
-    component "AuthService" as S1
-    component "WatchService" as S2
-    component "JobService" as S3
-    component "ResumeService" as S4
-  }
-  package "Patterns" {
-    component "Factories" as PAT1
-    component "Facades" as PAT2
-    component "Observers" as PAT3
-  }
-}
-
-database "PostgreSQL" as DB
-cloud "External APIs" as EXT
-
-User --> FE_Main
-FE_Main --> FE_App
-FE_App --> FE_Auth
-FE_App --> FE_Data
-FE_App --> P1
-FE_App --> P2
-FE_App --> P3
-FE_App --> P4
-
-FE_Auth --> C1
-FE_Data --> C2
-FE_Data --> C3
-FE_Data --> C4
-
-C1 --> S1
-C2 --> S2
-C3 --> S3
-C4 --> S4
-
-S1 --> DB
-S2 --> DB
-S3 --> DB
-S4 --> DB
-
-S2 --> PAT1
-S2 --> PAT3
-S3 --> PAT2
-S4 --> PAT2
-
-EXT --> PAT1
-@enduml
-
-@startuml NextOffer_Auth_Sequence
-title Authentication Flow - Register & Login
-participant "AuthScreen" as UI
-participant "AuthContext" as Ctx
-participant "AuthController" as Ctrl
-participant "AuthService" as Svc
-participant "JwtService" as JWT
-participant "UserRepository" as Repo
-participant "Browser Storage" as Storage
-
-UI -> Ctx: register(email, pwd, name)
-Ctx -> Ctrl: POST /api/auth/register
-Ctrl -> Svc: register()
-Svc -> Repo: findByEmail() - check exists
-alt Email exists
-  Svc --> Ctrl: EmailAlreadyExistsException
-else Email new
-  Svc -> Repo: save(new User)
-  Svc -> JWT: generateToken()
-  JWT --> Svc: token
-  Svc --> Ctrl: AuthResponse(token, user)
-end
-Ctrl --> Ctx: AuthResponse
-Ctx -> Storage: setStoredToken(token)
-Ctx --> UI: authenticated state
-UI --> UI: navigate to Dashboard
 
 @enduml
 
@@ -1346,14 +1227,15 @@ package "watch" {
     boardToken: String
     atsType: AtsType
     enabled: boolean
-    roleKeyword: String
-    locationKeyword: String
-    remoteOnly: boolean
-    scanStatus: ScanStatus
+    locationFilter: String
+    keywordFilter: String
+    departmentFilter: String
+    lastCheckedAt: Instant
+    lastScanStatus: ScanStatus
+    lastErrorMessage: String
   }
 
   enum ScanStatus {
-    NEVER_SCANNED
     SUCCESS
     FAILED
   }
@@ -1370,15 +1252,15 @@ package "watch" {
   }
 
   class CompanyWatchService <<Service>> {
-    +list(): List~CompanyWatchResponse~
-    +create(request): CompanyWatchResponse
-    +update(id, request): CompanyWatchResponse
-    +delete(id): void
-    +poll(id): PollWatchResponse
+    +listForUser(principal): List~CompanyWatchResponse~
+    +create(request, principal): CompanyWatchResponse
+    +update(id, request, principal): CompanyWatchResponse
+    +delete(id, principal): void
   }
 
-  class JobPollingScheduler <<Scheduler>> {
-    +pollEnabledWatches(): void
+  class JobObserverService <<Service>> {
+    +pollWatch(watchId, userId): PollResult
+    +pollAllEnabledWatches(): void
   }
 
   class JobIngestionMediator <<Mediator>> {
@@ -1399,7 +1281,10 @@ package "watch" {
     +onNewJobDiscovered(job, companyWatchId): void
   }
 
-  class JobObserverService <<Service>>
+  class JobPollingScheduler <<Scheduler>> {
+    +pollEnabledWatches(): void
+  }
+
   class JobWatchFilter {
     +apply(watch, jobs): List~JobPostingDto~
   }
@@ -1437,7 +1322,7 @@ package "job" {
   }
 
   class JobResumeController <<RestController>> {
-    +generateForJob(id): TailoredResumeResponse
+    +generate(jobId): TailoredResumeDetailResponse
   }
 
   class JobPostingService <<Service>> {
@@ -1503,18 +1388,22 @@ package "tracker" {
   }
 
   class ApplicationTrackerService <<Service>> {
-    +updateStatus(id, target): JobPostingResponse
+    +updateStatus(id, principal, status): JobPostingResponse
   }
 
   class UpdateApplicationStatusRequest <<record>>
 }
 
-CompanyWatchController "1" --> "1" CompanyWatchService : delegates
+CompanyWatchController "1" --> "1" CompanyWatchService : delegates CRUD
+CompanyWatchController "1" --> "1" JobObserverService : delegates poll
 CompanyWatchService "1" --> "1" CompanyWatchRepository : persists watches
-CompanyWatchService "1" --> "1" JobPostingRepository : reads known jobs
-CompanyWatchService "1" --> "1" JobIngestionMediator : coordinates polling
-JobPollingScheduler "1" --> "1" CompanyWatchService : triggers scheduled polls
-JobPollingScheduler "1" --> "1" JobIngestionMediator : coordinates scheduled ingestion
+CompanyWatchService "1" --> "1" JobPostingRepository : cascade delete jobs
+CompanyWatchService "1" --> "1" TailoredResumeRepository : cascade delete resumes
+CompanyWatchService "1" ..> "1" AtsTypeDetector : auto-detect ATS on create/update
+JobObserverService "1" --> "1" CompanyWatchRepository : loads watches
+JobObserverService "1" --> "1" JobPostingRepository : reads known jobs
+JobObserverService "1" --> "1" JobIngestionMediator : coordinates polling
+JobPollingScheduler "1" --> "1" JobObserverService : triggers scheduled polls
 JobIngestionMediator "1" --> "1" CareerPageFetchStrategyFactory : selects strategy
 JobIngestionMediator "1" --> "1" CompanyWatchSubject : publishes new jobs
 JobIngestionMediator "1" ..> "1" JobWatchFilter : dependency filters
@@ -1621,13 +1510,6 @@ package "resume.tailoring" {
 
   class OpenAiTailoringPipeline
   class RuleBasedTailoringPipeline
-  interface ResumeGenerator {
-    +generate(job, baseResume): TailoredResumeContent
-  }
-  class LLMResumeGenerator <<AI Integration>> {
-    -client: OpenAiClient
-    +generate(job, baseResume): TailoredResumeContent
-  }
   class OpenAiClient <<Service>>
   class TailoredResumeBuilder <<Builder>>
   class ResumeTemplatePrototype <<Prototype>>
@@ -1757,9 +1639,8 @@ ResumeTailoringFacade "1" --> "1" OpenAiTailoringPipeline : delegates AI pipelin
 ResumeTailoringFacade "1" --> "1..*" ResumeValidationHandler : validates content
 OpenAiTailoringPipeline --|> AbstractTailoringPipeline
 RuleBasedTailoringPipeline --|> AbstractTailoringPipeline
-OpenAiTailoringPipeline "1" --> "1" ResumeGenerator : invokes
-LLMResumeGenerator ..|> ResumeGenerator : realizes
-LLMResumeGenerator "1" --> "1" OpenAiClient : calls LLM API
+OpenAiTailoringPipeline "1" --> "1" OpenAiClient : calls LLM API
+OpenAiTailoringPipeline "1" --> "1" RuleBasedTailoringPipeline : fallback when AI disabled
 AbstractTailoringPipeline "1" --> "1" TailoredResumeBuilder : builds content
 AbstractTailoringPipeline "1" --> "1" ResumeTemplatePrototype : clones template
 AbstractTailoringPipeline "1" --> "1" BulletOrderMerger : orders bullets
@@ -2114,7 +1995,7 @@ actor User
 participant "SettingsPage.tsx" as SettingsPage
 participant "api/watches.ts" as ApiWatches
 participant "CompanyWatchController" as WatchController
-participant "CompanyWatchService" as WatchService
+participant "JobObserverService" as ObserverService
 participant "CompanyWatchRepository" as WatchRepo
 participant "JobPostingRepository" as JobRepo
 participant "JobIngestionMediator\n<<Mediator>>" as Mediator
@@ -2127,10 +2008,10 @@ participant "JobDiscoveryPersistenceListener\n<<Observer>>" as Listener
 User -> SettingsPage : click poll watch
 SettingsPage -> ApiWatches : pollWatch(id)
 ApiWatches -> WatchController : POST /api/watches/{id}/poll
-WatchController -> WatchService : poll(id)
-WatchService -> WatchRepo : findById(id)
-WatchService -> JobRepo : find known external ids
-WatchService -> Mediator : pollWatch(watch, knownIds, true)
+WatchController -> ObserverService : pollWatch(id, userId)
+ObserverService -> WatchRepo : findByIdAndUserId(id, userId)
+ObserverService -> JobRepo : findExternalIdsByCompanyWatchId(watchId)
+ObserverService -> Mediator : pollWatch(watch, knownIds, true)
 Mediator -> StrategyFactory : forAtsType(watch.atsType)
 StrategyFactory --> Mediator : Greenhouse/Workday/SmartRecruiters strategy
 Mediator -> Strategy : fetchForWatch(watch)
@@ -2144,9 +2025,9 @@ loop for each new externalId
   Listener -> JobRepo : existsByCompanyWatchIdAndExternalId(...)
   Listener -> JobRepo : save(new JobPosting(watch, job))
 end
-Mediator --> WatchService : newJobs
-WatchService --> WatchController : PollWatchResponse
-WatchController --> SettingsPage : new jobs summary
+Mediator --> ObserverService : newJobs
+ObserverService --> WatchController : PollResult
+WatchController --> SettingsPage : PollWatchResponse
 @enduml
 
 @startuml NextOffer_Resume_Generation_Sequence
@@ -2154,7 +2035,7 @@ title Resume Generation Flow - Facade, Template Method, Chain, Rendering
 actor User
 participant "ResumesPage/ResumePanel.tsx" as ResumeUI
 participant "api/resumes.ts" as ApiResumes
-participant "ResumeController" as ResumeController
+participant "JobResumeController" as JobResumeController
 participant "ResumeService" as ResumeService
 participant "JobPostingRepository" as JobRepo
 participant "BaseResumeRepository" as BaseRepo
@@ -2168,8 +2049,8 @@ participant "TailoredResumeRepository" as TailoredRepo
 
 User -> ResumeUI : generate resume for selected job
 ResumeUI -> ApiResumes : generateResumeForJob(jobId)
-ApiResumes -> ResumeController : POST /api/resumes/jobs/{jobId}
-ResumeController -> ResumeService : generateForJob(jobId)
+ApiResumes -> JobResumeController : POST /api/jobs/{jobId}/resumes/generate
+JobResumeController -> ResumeService : generateForJob(jobId)
 ResumeService -> JobRepo : findById(jobId)
 ResumeService -> BaseRepo : find latest base resume
 ResumeService -> Facade : tailor(jobDto, baseContent)
@@ -2189,8 +2070,8 @@ ResumeService -> Pdf : compile(latex)
 Pdf --> ResumeService : pdf path/status
 ResumeService -> TailoredRepo : save(TailoredResume)
 TailoredRepo --> ResumeService : persisted resume
-ResumeService --> ResumeController : TailoredResumeResponse
-ResumeController --> ResumeUI : generated resume metadata
+ResumeService --> JobResumeController : TailoredResumeDetailResponse
+JobResumeController --> ResumeUI : generated resume metadata
 @enduml
 
 @startuml NextOffer_Tracker_State_Sequence
@@ -2207,8 +2088,8 @@ participant "ApplicationStates" as States
 
 User -> TrackerPage : move job to new status
 TrackerPage -> ApiJobs : updateApplicationStatus(id, target)
-ApiJobs -> Controller : PATCH /api/jobs/{id}/status
-Controller -> Service : updateStatus(id, target)
+ApiJobs -> Controller : PATCH /api/jobs/{id}/application-status
+Controller -> Service : updateStatus(id, principal, request.status())
 Service -> JobRepo : findById(id)
 Service -> Context : fromStatus(currentStatus)
 Context -> States : from(currentStatus)
@@ -2241,14 +2122,14 @@ Main -> AuthProvider : wrap application
 AuthProvider -> AppDataProvider : provide auth state to data layer
 AppDataProvider -> JobsApi : listJobs()
 AppDataProvider -> WatchesApi : listWatches()
-AppDataProvider -> ResumesApi : listTailoredResumes()
+AppDataProvider -> ResumesApi : getBaseResume(), listTailoredResumes()
 JobsApi --> AppDataProvider : JobPosting[]
 AppDataProvider -> Mappers : mapJobPosting(dto)
 Mappers --> AppDataProvider : Job[]
 AppDataProvider -> App : context value
 App -> Pages : render selected view
 Pages -> AppDataProvider : useAppData()
-AppDataProvider --> Pages : jobs, watches, resumes, refresh/update actions
+AppDataProvider --> Pages : jobs, watches, resumes,\npollAllWatches(), updateJobApplicationStatus()
 @enduml
 
 @startuml NextOffer_Use_Case_Diagram
@@ -2257,26 +2138,21 @@ skinparam actorStyle awesome
 left to right direction
 
 actor "Student/Job Seeker" as Student
-actor "Administrator" as Admin
-actor "External System" as External
 
 rectangle "NextOffer System" {
   usecase "Register & Login" as UC1
-  usecase "Manage Profile" as UC2
   usecase "Create Company Watch" as UC3
   usecase "Poll Career Pages" as UC4
-  usecase "View New Jobs" as UC5
+  usecase "View & Filter Jobs" as UC5
   usecase "Track Application Status" as UC6
-  usecase "Upload Resume" as UC7
+  usecase "Upload Base Resume" as UC7
   usecase "Tailor Resume for Job" as UC8
   usecase "Generate PDF Resume" as UC9
   usecase "View Resume History" as UC10
   usecase "Manage Dashboard" as UC11
-  usecase "Connect to ATS Systems" as UC12
 }
 
 Student --> UC1
-Student --> UC2
 Student --> UC3
 Student --> UC4
 Student --> UC5
@@ -2287,17 +2163,12 @@ Student --> UC9
 Student --> UC10
 Student --> UC11
 
-Admin --> UC12
-
 UC3 --> UC4
 UC4 --> UC5
 UC5 --> UC6
 UC6 --> UC8
 UC8 --> UC9
 UC8 --> UC10
-
-External --> UC12
-UC12 --> UC4
 
 @enduml
 
@@ -2368,11 +2239,10 @@ package "Observer Pattern" {
   }
 
   class JobObserverService {
-    +registerListener(listener): void
+    +pollAllEnabledWatches(): void
   }
 
   class JobPollingScheduler {
-    -subject: CompanyWatchSubject
     +pollEnabledWatches(): void
   }
 }
@@ -2380,8 +2250,9 @@ package "Observer Pattern" {
 JobDiscoveryPersistenceListener ..|> JobDiscoveryListener : realizes
 CompanyWatchSubject "1" o--> "0..*" JobDiscoveryListener : notifies
 JobDiscoveryPersistenceListener "1" --> "1" JobPostingRepository : persists through
-JobPollingScheduler "1" --> "1" CompanyWatchSubject : triggers polling
-JobObserverService "1" --> "1" CompanyWatchSubject : registers listeners
+JobPollingScheduler "1" --> "1" JobObserverService : triggers scheduled polls
+JobObserverService "1" --> "1" JobIngestionMediator : coordinates ingestion
+JobDiscoveryPersistenceListener "1" --> "1" CompanyWatchSubject : subscribes on startup
 
 @enduml
 
