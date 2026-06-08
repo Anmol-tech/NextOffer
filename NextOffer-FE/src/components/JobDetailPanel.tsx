@@ -8,9 +8,11 @@ import { ResumeViewerModal } from './ResumeViewerModal'
 
 export function JobDetailPanel({
   job,
+  compact = false,
   onViewResume,
 }: {
   job: Job
+  compact?: boolean
   onViewResume?: (target: ResumeViewerTarget) => void
 }) {
   const { baseResume, tailoredResumes, generatingJobId, generateResumeForJob, downloadResume, updateJobApplicationStatus } =
@@ -70,7 +72,7 @@ export function JobDetailPanel({
 
   return (
     <>
-      <article className="panel detail-panel panel-scroll-column">
+      <article className={`panel detail-panel panel-scroll-column${compact ? ' detail-panel-compact' : ''}`}>
         <div className="detail-panel-top panel-scroll-header">
           <PanelHeader title="Job detail" action="Open link" onAction={openApplyLink} />
           <div className="selected-job">
@@ -113,19 +115,22 @@ export function JobDetailPanel({
             </p>
           )}
 
-          {isValidJob && (
+          {!compact && isValidJob && (
             <div className="tracker-quick-actions">
-              {TRACKER_STATUSES.filter((status) => status !== job.status).map((status) => (
-                <button
-                  className={`tracker-action-chip tracker-action-chip-${status.toLowerCase()}`}
-                  disabled={statusUpdating}
-                  key={status}
-                  onClick={() => void handleStatusChange(status)}
-                  type="button"
-                >
-                  {status}
-                </button>
-              ))}
+              {TRACKER_STATUSES.map((status) => {
+                const isActive = job.status === status
+                return (
+                  <button
+                    className={`tracker-action-chip tracker-action-chip-${status.toLowerCase()}${isActive ? ' active' : ''}`}
+                    disabled={statusUpdating || isActive}
+                    key={status}
+                    onClick={() => void handleStatusChange(status)}
+                    type="button"
+                  >
+                    {isActive ? `✓ ${status}` : status}
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
@@ -138,9 +143,9 @@ export function JobDetailPanel({
               onClick={() => void handleGenerate()}
               type="button"
             >
-              {isGenerating ? 'Generating…' : existing ? 'Regenerate tailored PDF' : 'Generate tailored PDF'}
+              {isGenerating ? 'Generating…' : existing ? 'Regenerate PDF' : 'Generate tailored PDF'}
             </button>
-            {existing && (
+            {!compact && existing && (
               <button
                 className="ghost-button"
                 onClick={() => openViewer({ kind: 'tailored', id: existing.id })}
@@ -149,7 +154,7 @@ export function JobDetailPanel({
                 View resume
               </button>
             )}
-            {existing && (existing.outputStatus === 'PDF_READY' || existing.outputStatus === 'LATEX_ONLY') && (
+            {!compact && existing && (existing.outputStatus === 'PDF_READY' || existing.outputStatus === 'LATEX_ONLY') && (
               <>
                 {existing.outputStatus === 'PDF_READY' && (
                   <button
@@ -169,9 +174,11 @@ export function JobDetailPanel({
                 </button>
               </>
             )}
-            <button className="ghost-button" onClick={openApplyLink} type="button">
-              Open apply link
-            </button>
+            {!compact && (
+              <button className="ghost-button" onClick={openApplyLink} type="button">
+                Open apply link
+              </button>
+            )}
           </div>
         </div>
       </article>

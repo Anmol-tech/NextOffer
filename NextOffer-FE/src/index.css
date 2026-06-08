@@ -34,6 +34,10 @@ body {
   background: var(--bg);
 }
 
+body:has(.app-shell) {
+  overflow: hidden;
+}
+
 button,
 a {
   -webkit-tap-highlight-color: transparent;

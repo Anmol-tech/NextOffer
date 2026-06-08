@@ -208,6 +208,25 @@ class CompanyWatchControllerTest {
     }
 
     @Test
+    void createWorkdayWatch() throws Exception {
+        String token = registerAndLogin();
+
+        mockMvc.perform(post("/api/watches")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "companyName": "Workday Corp",
+                                  "careerPageUrl": "https://workday.wd5.myworkdayjobs.com/en-US/Workday",
+                                  "atsType": "WORKDAY"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.atsType").value("WORKDAY"))
+                .andExpect(jsonPath("$.companyName").value("Workday Corp"));
+    }
+
+    @Test
     void deleteWatchRemovesDiscoveredJobs() throws Exception {
         String token = registerAndLogin();
 

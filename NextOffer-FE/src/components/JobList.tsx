@@ -4,11 +4,11 @@ type JobListProps = {
   jobs: Job[]
   selectedJobId: string
   onSelectJob: (id: string) => void
-  compact?: boolean
+  limit?: number
 }
 
-export function JobList({ jobs, selectedJobId, onSelectJob, compact = false }: JobListProps) {
-  const visibleJobs = compact ? jobs.slice(0, 3) : jobs
+export function JobList({ jobs, selectedJobId, onSelectJob, limit }: JobListProps) {
+  const visibleJobs = limit ? jobs.slice(0, limit) : jobs
 
   if (visibleJobs.length === 0) {
     return <p className="empty-state">No jobs yet. Add a company watch and poll for openings.</p>

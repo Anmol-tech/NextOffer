@@ -1,12 +1,18 @@
 .app-shell {
   min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
   background: var(--bg);
 }
 
 .sidebar {
-  min-height: 100vh;
+  min-height: 0;
+  height: 100%;
+  max-height: 100vh;
+  overflow-y: auto;
   padding: 24px 18px;
   background: var(--surface);
   border-right: 1px solid var(--border);
@@ -158,6 +164,7 @@
   gap: 22px;
   height: 100vh;
   max-height: 100vh;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -173,6 +180,24 @@
   flex-direction: column;
   gap: 16px;
   overflow: hidden;
+}
+
+.dashboard-page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.dashboard-page > .metric-grid {
+  flex: 0 0 auto;
+}
+
+.dashboard-page > .content-grid {
+  flex: 1;
+  min-height: 0;
 }
 
 .layout-fill {
@@ -318,8 +343,9 @@ input {
   min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
+  padding-bottom: 24px;
   scrollbar-width: thin;
-  scrollbar-color: #b8c8c0 transparent;
+  scrollbar-color: var(--text-muted) var(--muted-surface);
 }
 
 .jobs-layout,
@@ -382,8 +408,9 @@ input {
   min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
+  padding-bottom: 24px;
   scrollbar-width: thin;
-  scrollbar-color: #b8c8c0 transparent;
+  scrollbar-color: var(--text-muted) var(--muted-surface);
 }
 
 .detail-panel.panel-scroll-column {
@@ -420,8 +447,9 @@ input {
   padding-top: 16px;
   border-top: 1px solid var(--border);
   padding-right: 4px;
+  padding-bottom: 24px;
   scrollbar-width: thin;
-  scrollbar-color: #b8c8c0 transparent;
+  scrollbar-color: var(--text-muted) var(--muted-surface);
 }
 
 .detail-panel-footer {
@@ -433,6 +461,40 @@ input {
 
 .detail-panel-footer .detail-actions {
   margin: 0;
+}
+
+.detail-panel-compact .selected-job h2 {
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.detail-panel-compact .match-ring {
+  width: 72px;
+  height: 72px;
+  border-width: 6px;
+}
+
+.detail-panel-compact .match-ring strong {
+  font-size: 16px;
+}
+
+.detail-panel-compact .detail-panel-scroll {
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.detail-panel-compact .detail-panel-footer {
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.detail-panel-compact .detail-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.detail-panel-compact .detail-actions .primary-button {
+  width: 100%;
 }
 
 .layout-grid-fill .detail-panel,
@@ -495,9 +557,10 @@ input {
 }
 
 .resume-viewer-scroll {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  align-content: start;
+  align-items: stretch;
 }
 
 .resume-viewer-scroll .resume-pdf-frame {
@@ -506,6 +569,18 @@ input {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #fff;
+  flex: 1;
+}
+
+.resume-viewer-scroll .resume-source-block {
+  min-height: 420px;
+  flex: 1;
+}
+
+.resume-viewer-scroll .resume-document {
+  min-height: 420px;
+  flex: 1;
+  overflow: visible;
 }
 
 .resume-viewer-actions {
@@ -751,22 +826,24 @@ input {
   border: 1px dashed #b8c8c0;
   border-radius: 8px;
   background: #fbfdfb;
-  display: flex;
-  align-items: center;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  gap: 12px 14px;
+  align-items: start;
   padding: 16px;
-  flex-wrap: wrap;
 }
 
 .resume-upload-zone {
-  margin-bottom: 16px;
+  margin-bottom: 0;
+  flex: 0 0 auto;
 }
 
 .upload-zone-actions {
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-left: auto;
 }
 
 .resume-format-row {
@@ -835,12 +912,60 @@ input {
   margin-top: 2px;
 }
 
+.version-list {
+  border-top: 1px solid var(--border);
+  margin-top: 16px;
+  padding-top: 8px;
+}
+
+.resume-panel .panel-scroll-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 0;
+}
+
+.resume-panel .version-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin-top: 16px;
+  padding-top: 8px;
+  padding-right: 4px;
+}
+
+.resume-panel-compact .upload-zone {
+  min-height: auto;
+  padding: 14px;
+}
+
+.resume-panel-compact .upload-zone > span {
+  width: 40px;
+  height: 40px;
+  font-size: 11px;
+}
+
+.resume-panel-compact .upload-zone-actions {
+  justify-content: flex-start;
+}
+
 .activity-list p {
-  color: var(--text-muted);
-  border-left: 2px solid #d8e7df;
-  padding-left: 12px;
+  color: var(--text-strong);
+  margin: 0;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.45;
+}
+
+.activity-row {
+  display: grid;
+  gap: 4px;
+  border-left: 2px solid #d8e7df;
+  padding: 8px 0 8px 12px;
+}
+
+.activity-row span {
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .workflow-panel {
@@ -1041,8 +1166,9 @@ input {
   align-content: start;
   overflow-y: auto;
   padding: 12px;
+  padding-bottom: 24px;
   scrollbar-width: thin;
-  scrollbar-color: #b8c8c0 transparent;
+  scrollbar-color: var(--text-muted) var(--muted-surface);
 }
 
 .tracker-card {
@@ -1114,9 +1240,16 @@ input {
   background: #f7fbf8;
 }
 
-.tracker-action-chip:disabled {
+.tracker-action-chip:disabled:not(.active) {
   cursor: wait;
   opacity: 0.65;
+}
+
+.tracker-action-chip.active {
+  cursor: default;
+  opacity: 1 !important;
+  font-weight: 850;
+  border-width: 2px;
 }
 
 .tracker-action-chip-new {
@@ -1598,8 +1731,9 @@ input {
   min-height: 0;
   max-height: 100%;
   overflow-y: auto;
+  padding-bottom: 24px;
   scrollbar-width: thin;
-  scrollbar-color: #b8c8c0 transparent;
+  scrollbar-color: var(--text-muted) var(--muted-surface);
 }
 
 .settings-section-header {
@@ -1739,8 +1873,9 @@ input {
   min-height: 0;
   max-height: 100%;
   overflow-y: auto;
+  padding-bottom: 24px;
   scrollbar-width: thin;
-  scrollbar-color: #b8c8c0 transparent;
+  scrollbar-color: var(--text-muted) var(--muted-surface);
 }
 
 .settings-summary-panel {
@@ -2054,4 +2189,56 @@ input {
   width: min(920px, 100%);
   max-height: calc(100vh - 48px);
   overflow: auto;
+}
+
+/* Custom webkit scrollbars for scrollable views */
+.panel-scroll-body::-webkit-scrollbar,
+.job-panel-scroll::-webkit-scrollbar,
+.detail-panel-scroll::-webkit-scrollbar,
+.tracker-list::-webkit-scrollbar,
+.settings-side-panel::-webkit-scrollbar,
+.resume-viewer-scroll::-webkit-scrollbar,
+.resume-source-block::-webkit-scrollbar,
+.resume-document::-webkit-scrollbar,
+.resume-viewer-modal-content::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.panel-scroll-body::-webkit-scrollbar-track,
+.job-panel-scroll::-webkit-scrollbar-track,
+.detail-panel-scroll::-webkit-scrollbar-track,
+.tracker-list::-webkit-scrollbar-track,
+.settings-side-panel::-webkit-scrollbar-track,
+.resume-viewer-scroll::-webkit-scrollbar-track,
+.resume-source-block::-webkit-scrollbar-track,
+.resume-document::-webkit-scrollbar-track,
+.resume-viewer-modal-content::-webkit-scrollbar-track {
+  background: var(--muted-surface);
+  border-radius: 4px;
+}
+
+.panel-scroll-body::-webkit-scrollbar-thumb,
+.job-panel-scroll::-webkit-scrollbar-thumb,
+.detail-panel-scroll::-webkit-scrollbar-thumb,
+.tracker-list::-webkit-scrollbar-thumb,
+.settings-side-panel::-webkit-scrollbar-thumb,
+.resume-viewer-scroll::-webkit-scrollbar-thumb,
+.resume-source-block::-webkit-scrollbar-thumb,
+.resume-document::-webkit-scrollbar-thumb,
+.resume-viewer-modal-content::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.panel-scroll-body::-webkit-scrollbar-thumb:hover,
+.job-panel-scroll::-webkit-scrollbar-thumb:hover,
+.detail-panel-scroll::-webkit-scrollbar-thumb:hover,
+.tracker-list::-webkit-scrollbar-thumb:hover,
+.settings-side-panel::-webkit-scrollbar-thumb:hover,
+.resume-viewer-scroll::-webkit-scrollbar-thumb:hover,
+.resume-source-block::-webkit-scrollbar-thumb:hover,
+.resume-document::-webkit-scrollbar-thumb:hover,
+.resume-viewer-modal-content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }

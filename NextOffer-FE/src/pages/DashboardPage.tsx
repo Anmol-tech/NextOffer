@@ -24,7 +24,7 @@ export function DashboardPage({ jobs, selectedJob, onSelectJob, onNavigate }: Da
   const appliedJobs = jobs.filter((job) => job.status === 'Applied').length
 
   return (
-    <>
+    <div className="dashboard-page layout-fill">
       <section className="metric-grid" aria-label="Application summary">
         <Metric label="Discovered jobs" value={String(jobs.length)} detail="From watched companies" />
         <Metric label="New roles" value={String(newJobs)} detail="Not yet reviewed" />
@@ -38,16 +38,16 @@ export function DashboardPage({ jobs, selectedJob, onSelectJob, onNavigate }: Da
             <PanelHeader title="Recommended jobs" action="View all" onAction={() => onNavigate('jobs')} />
           </div>
           <div className="panel-scroll-body">
-            <JobList jobs={jobs} selectedJobId={selectedJob.id} onSelectJob={onSelectJob} compact />
+            <JobList jobs={jobs} selectedJobId={selectedJob.id} onSelectJob={onSelectJob} limit={8} />
           </div>
         </article>
 
-        <JobDetailPanel job={selectedJob} onViewResume={setViewerTarget} />
-        <ResumePanel onViewTarget={setViewerTarget} />
+        <JobDetailPanel compact job={selectedJob} onViewResume={setViewerTarget} />
+        <ResumePanel compact onViewTarget={setViewerTarget} />
         <ActivityPanel jobs={jobs} />
       </section>
 
       <ResumeViewerModal target={viewerTarget} onClose={() => setViewerTarget(null)} />
-    </>
+    </div>
   )
 }

@@ -44,10 +44,12 @@ function detectFormat(text: string): ResumeSourceFormat {
 
 export function ResumePanel({
   full = false,
+  compact = false,
   viewerTarget = null,
   onViewTarget,
 }: {
   full?: boolean
+  compact?: boolean
   viewerTarget?: ResumeViewerTarget | null
   onViewTarget?: (target: ResumeViewerTarget) => void
 }) {
@@ -66,7 +68,7 @@ export function ResumePanel({
   const textFileInputRef = useRef<HTMLInputElement>(null)
   const texFileInputRef = useRef<HTMLInputElement>(null)
 
-  const versions = full ? tailoredResumes : tailoredResumes.slice(0, 3)
+  const versions = full ? tailoredResumes : tailoredResumes.slice(0, compact ? 2 : 3)
   const draftFormat = detectFormat(draft)
 
   function startEditing() {
@@ -110,7 +112,7 @@ export function ResumePanel({
   }
 
   return (
-    <article className="panel resume-panel panel-scroll-column">
+    <article className={`panel resume-panel panel-scroll-column${compact ? ' resume-panel-compact' : ''}`}>
       <div className="panel-scroll-header">
         <PanelHeader
           title="Resume workspace"
@@ -208,38 +210,42 @@ export function ResumePanel({
                 View base
               </button>
             )}
-            <input
-              accept=".txt,.md,.text"
-              hidden
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (file) {
-                  void handleFileUpload(file)
-                }
-                event.target.value = ''
-              }}
-              ref={textFileInputRef}
-              type="file"
-            />
-            <input
-              accept=".tex"
-              hidden
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (file) {
-                  void handleFileUpload(file)
-                }
-                event.target.value = ''
-              }}
-              ref={texFileInputRef}
-              type="file"
-            />
-            <button className="ghost-button" disabled={saving} onClick={() => textFileInputRef.current?.click()} type="button">
-              Upload text
-            </button>
-            <button className="ghost-button" disabled={saving} onClick={() => texFileInputRef.current?.click()} type="button">
-              Upload .tex
-            </button>
+            {!compact && (
+              <>
+                <input
+                  accept=".txt,.md,.text"
+                  hidden
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) {
+                      void handleFileUpload(file)
+                    }
+                    event.target.value = ''
+                  }}
+                  ref={textFileInputRef}
+                  type="file"
+                />
+                <input
+                  accept=".tex"
+                  hidden
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) {
+                      void handleFileUpload(file)
+                    }
+                    event.target.value = ''
+                  }}
+                  ref={texFileInputRef}
+                  type="file"
+                />
+                <button className="ghost-button" disabled={saving} onClick={() => textFileInputRef.current?.click()} type="button">
+                  Upload text
+                </button>
+                <button className="ghost-button" disabled={saving} onClick={() => texFileInputRef.current?.click()} type="button">
+                  Upload .tex
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
