@@ -39,6 +39,59 @@ const ATS_OPTIONS: AtsOption[] = [
   },
 ]
 
+const DEMO_WATCH_PRESETS: Array<{
+  label: string
+  companyName: string
+  atsType: CompanyWatch['atsType']
+  careerPageUrl: string
+  filters: WatchFilterForm
+}> = [
+  {
+    label: 'Stripe',
+    companyName: 'Stripe',
+    atsType: 'GREENHOUSE',
+    careerPageUrl: 'https://boards.greenhouse.io/stripe',
+    filters: {
+      locationFilter: 'San Francisco, Remote',
+      keywordFilter: 'software, engineer',
+      departmentFilter: 'Engineering',
+    },
+  },
+  {
+    label: 'Workday',
+    companyName: 'Workday',
+    atsType: 'WORKDAY',
+    careerPageUrl: 'https://workday.wd5.myworkdayjobs.com/en-US/Workday',
+    filters: {
+      locationFilter: 'Pleasanton, Remote',
+      keywordFilter: 'software, product',
+      departmentFilter: 'Engineering',
+    },
+  },
+  {
+    label: 'Anthropic',
+    companyName: 'Anthropic',
+    atsType: 'GREENHOUSE',
+    careerPageUrl: 'https://boards.greenhouse.io/anthropic',
+    filters: {
+      locationFilter: 'San Francisco, New York',
+      keywordFilter: 'research, engineer',
+      departmentFilter: 'Research',
+    },
+  },
+  {
+    label: 'Visa',
+    companyName: 'Visa',
+    atsType: 'SMART_RECRUITERS',
+    careerPageUrl: 'https://jobs.smartrecruiters.com/Visa',
+    filters: {
+      locationFilter: 'Austin, Foster City',
+      keywordFilter: 'software, platform',
+      departmentFilter: 'Technology',
+    },
+  },
+]
+
 const emptyFilters = (): WatchFilterForm => ({
   locationFilter: '',
   keywordFilter: '',
@@ -80,6 +133,7 @@ export function SettingsPage() {
   const [atsType, setAtsType] = useState<CompanyWatch['atsType']>('GREENHOUSE')
   const [careerPageUrl, setCareerPageUrl] = useState('')
   const [newFilters, setNewFilters] = useState<WatchFilterForm>(emptyFilters)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editFilters, setEditFilters] = useState<WatchFilterForm>(emptyFilters)
   const [submitting, setSubmitting] = useState(false)
@@ -95,6 +149,16 @@ export function SettingsPage() {
     setCareerPageUrl('')
   }
 
+  function applyPreset(preset: (typeof DEMO_WATCH_PRESETS)[number]) {
+    setCompanyName(preset.companyName)
+    setAtsType(preset.atsType)
+    setCareerPageUrl(preset.careerPageUrl)
+    setNewFilters(preset.filters)
+    setFiltersOpen(true)
+    setError(null)
+    setMessage(`Pre-filled ${preset.companyName} — review and click Add watch.`)
+  }
+
   async function handleAddWatch(event: React.FormEvent) {
     event.preventDefault()
     setSubmitting(true)
@@ -103,7 +167,10 @@ export function SettingsPage() {
     try {
       await addWatch(companyName, careerPageUrl, newFilters, atsType)
       setCompanyName('')
+      setCareerPageUrl('')
+      setAtsType('GREENHOUSE')
       setNewFilters(emptyFilters())
+      setFiltersOpen(false)
       setMessage('Company watch added.')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add watch')
@@ -176,6 +243,22 @@ export function SettingsPage() {
             </button>
           </div>
 
+          <div className="watch-preset-row">
+            <span className="watch-preset-label">Quick fill for demo</span>
+            <div className="watch-preset-buttons">
+              {DEMO_WATCH_PRESETS.map((preset) => (
+                <button
+                  className="ghost-button watch-preset-button"
+                  key={preset.label}
+                  onClick={() => applyPreset(preset)}
+                  type="button"
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="watch-form-primary">
             <label>
               Company
@@ -210,7 +293,11 @@ export function SettingsPage() {
             </label>
           </div>
 
-          <details className="watch-filter-details">
+          <details
+            className="watch-filter-details"
+            open={filtersOpen}
+            onToggle={(event) => setFiltersOpen(event.currentTarget.open)}
+          >
             <summary>Optional filters</summary>
             <div className="watch-filter-grid">
               <label>
