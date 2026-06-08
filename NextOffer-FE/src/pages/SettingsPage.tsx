@@ -63,9 +63,9 @@ const DEMO_WATCH_PRESETS: Array<{
     atsType: 'WORKDAY',
     careerPageUrl: 'https://workday.wd5.myworkdayjobs.com/en-US/Workday',
     filters: {
-      locationFilter: 'Pleasanton, Remote',
-      keywordFilter: 'software, product',
-      departmentFilter: 'Engineering',
+      locationFilter: '',
+      keywordFilter: 'software',
+      departmentFilter: '',
     },
   },
   {
@@ -85,9 +85,9 @@ const DEMO_WATCH_PRESETS: Array<{
     atsType: 'SMART_RECRUITERS',
     careerPageUrl: 'https://jobs.smartrecruiters.com/Visa',
     filters: {
-      locationFilter: 'Austin, Foster City',
-      keywordFilter: 'software, platform',
-      departmentFilter: 'Technology',
+      locationFilter: '',
+      keywordFilter: '',
+      departmentFilter: '',
     },
   },
 ]
@@ -134,6 +134,7 @@ export function SettingsPage() {
   const [careerPageUrl, setCareerPageUrl] = useState('')
   const [newFilters, setNewFilters] = useState<WatchFilterForm>(emptyFilters)
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [addFormOpen, setAddFormOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editFilters, setEditFilters] = useState<WatchFilterForm>(emptyFilters)
   const [submitting, setSubmitting] = useState(false)
@@ -154,9 +155,18 @@ export function SettingsPage() {
     setAtsType(preset.atsType)
     setCareerPageUrl(preset.careerPageUrl)
     setNewFilters(preset.filters)
-    setFiltersOpen(true)
+    setFiltersOpen(
+      Boolean(
+        preset.filters.locationFilter ||
+          preset.filters.keywordFilter ||
+          preset.filters.departmentFilter,
+      ),
+    )
+    setAddFormOpen(true)
     setError(null)
-    setMessage(`Pre-filled ${preset.companyName} — review and click Add watch.`)
+    setMessage(
+      `Pre-filled ${preset.companyName}. Add the watch, then Poll — demo filters are tuned so jobs are not over-filtered.`,
+    )
   }
 
   async function handleAddWatch(event: React.FormEvent) {
@@ -227,122 +237,127 @@ export function SettingsPage() {
   }
 
   return (
-    <section className="content-grid settings-layout layout-fill">
-      <article className="panel settings-watch-panel panel-scroll-column">
-        <div className="settings-watch-top panel-scroll-header">
-          <PanelHeader title="Company watches" action={`${watches.length} active`} />
-
-          <form className="watch-form watch-form-card" onSubmit={handleAddWatch}>
-          <div className="watch-form-header">
-            <div>
-              <span className="eyebrow">New watch</span>
-              <h3>Add a career page</h3>
-            </div>
-            <button className="primary-button" disabled={submitting} type="submit">
-              {submitting ? 'Adding...' : 'Add watch'}
-            </button>
+    <section className="settings-layout layout-fill">
+      {addFormOpen && (
+        <article className="panel settings-form-panel">
+          <div className="panel-scroll-header">
+            <PanelHeader title="Add company watch" />
+            {message && <p className="inline-message">{message}</p>}
+            {error && <p className="form-error">{error}</p>}
           </div>
 
-          <div className="watch-preset-row">
-            <span className="watch-preset-label">Quick fill for demo</span>
-            <div className="watch-preset-buttons">
-              {DEMO_WATCH_PRESETS.map((preset) => (
-                <button
-                  className="ghost-button watch-preset-button"
-                  key={preset.label}
-                  onClick={() => applyPreset(preset)}
-                  type="button"
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="watch-form-primary">
-            <label>
-              Company
-              <input
-                placeholder="Company name"
-                value={companyName}
-                onChange={(event) => setCompanyName(event.target.value)}
-                required
-              />
-            </label>
-            <label>
-              ATS / Job board type
-              <select
-                value={atsType}
-                onChange={(event) => handleAtsChange(event.target.value as CompanyWatch['atsType'])}
-              >
-                {ATS_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
+          <form className="watch-form" onSubmit={handleAddWatch}>
+            <div className="watch-preset-row">
+              <span className="watch-preset-label">Quick fill for demo</span>
+              <div className="watch-preset-buttons">
+                {DEMO_WATCH_PRESETS.map((preset) => (
+                  <button
+                    className="ghost-button watch-preset-button"
+                    key={preset.label}
+                    onClick={() => applyPreset(preset)}
+                    type="button"
+                  >
+                    {preset.label}
+                  </button>
                 ))}
-              </select>
-            </label>
-            <label>
-              Career page URL
-              <input
-                placeholder={selectedAts.placeholder}
-                value={careerPageUrl}
-                onChange={(event) => setCareerPageUrl(event.target.value)}
-                required
-              />
-            </label>
-          </div>
+              </div>
+            </div>
 
-          <details
-            className="watch-filter-details"
-            open={filtersOpen}
-            onToggle={(event) => setFiltersOpen(event.currentTarget.open)}
-          >
-            <summary>Optional filters</summary>
-            <div className="watch-filter-grid">
+            <div className="watch-form-primary">
               <label>
-                Locations
+                Company
                 <input
-                  placeholder="San Francisco, Remote"
-                  value={newFilters.locationFilter}
-                  onChange={(event) =>
-                    setNewFilters((current) => ({ ...current, locationFilter: event.target.value }))
-                  }
+                  placeholder="Company name"
+                  value={companyName}
+                  onChange={(event) => setCompanyName(event.target.value)}
+                  required
                 />
               </label>
               <label>
-                Keywords
-                <input
-                  placeholder="backend, intern"
-                  value={newFilters.keywordFilter}
-                  onChange={(event) =>
-                    setNewFilters((current) => ({ ...current, keywordFilter: event.target.value }))
-                  }
-                />
+                ATS / Job board type
+                <select
+                  value={atsType}
+                  onChange={(event) => handleAtsChange(event.target.value as CompanyWatch['atsType'])}
+                >
+                  {ATS_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label>
-                Departments
+                Career page URL
                 <input
-                  placeholder="Engineering, Product"
-                  value={newFilters.departmentFilter}
-                  onChange={(event) =>
-                    setNewFilters((current) => ({ ...current, departmentFilter: event.target.value }))
-                  }
+                  placeholder={selectedAts.placeholder}
+                  value={careerPageUrl}
+                  onChange={(event) => setCareerPageUrl(event.target.value)}
+                  required
                 />
               </label>
             </div>
-          </details>
-        </form>
 
-        {message && <p className="inline-message">{message}</p>}
-        {error && <p className="form-error">{error}</p>}
+            <details
+              className="watch-filter-details"
+              open={filtersOpen}
+              onToggle={(event) => setFiltersOpen(event.currentTarget.open)}
+            >
+              <summary>Optional keyword & location filters</summary>
+              <div className="watch-filter-grid">
+                <label>
+                  Locations
+                  <input
+                    placeholder="San Francisco, Remote"
+                    value={newFilters.locationFilter}
+                    onChange={(event) =>
+                      setNewFilters((current) => ({ ...current, locationFilter: event.target.value }))
+                    }
+                  />
+                </label>
+                <label>
+                  Keywords
+                  <input
+                    placeholder="backend, intern"
+                    value={newFilters.keywordFilter}
+                    onChange={(event) =>
+                      setNewFilters((current) => ({ ...current, keywordFilter: event.target.value }))
+                    }
+                  />
+                </label>
+                <label>
+                  Departments
+                  <input
+                    placeholder="Engineering, Product"
+                    value={newFilters.departmentFilter}
+                    onChange={(event) =>
+                      setNewFilters((current) => ({ ...current, departmentFilter: event.target.value }))
+                    }
+                  />
+                </label>
+              </div>
+            </details>
 
-          <div className="settings-section-header">
-            <div>
-              <span className="eyebrow">Saved watches</span>
-              <h3>Career pages being monitored</h3>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+              <button className="primary-button" disabled={submitting} type="submit">
+                {submitting ? 'Adding...' : 'Add watch'}
+              </button>
+              <button className="ghost-button" onClick={() => setAddFormOpen(false)} type="button">
+                Cancel
+              </button>
             </div>
-          </div>
+          </form>
+        </article>
+      )}
+
+      <article className="panel settings-watch-panel panel-scroll-column">
+        <div className="settings-watch-header panel-scroll-header">
+          <PanelHeader
+            title="Monitored company watches"
+            action={addFormOpen ? 'Cancel' : 'Add watch'}
+            onAction={() => setAddFormOpen(!addFormOpen)}
+          />
+          {!addFormOpen && message && <p className="inline-message">{message}</p>}
+          {!addFormOpen && error && <p className="form-error">{error}</p>}
         </div>
 
         <div className="watch-list panel-scroll-body">
