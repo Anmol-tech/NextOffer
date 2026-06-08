@@ -1,5 +1,6 @@
 package com.example.nextoffer.watch;
 
+import com.example.nextoffer.career.AtsType;
 import com.example.nextoffer.job.JobPosting;
 import com.example.nextoffer.job.JobPostingDto;
 import com.example.nextoffer.job.JobPostingRepository;
@@ -7,8 +8,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -47,18 +50,36 @@ public class JobObserverService {
         }
         try {
             Set<String> knownIds = new HashSet<>(jobPostingRepository.findExternalIdsByCompanyWatchId(watch.getId()));
-            List<JobPostingDto> newJobs = jobIngestionMediator.pollWatch(watch, knownIds, true);
+            JobIngestionMediator.PollOutcome outcome = jobIngestionMediator.pollWatch(watch, knownIds, true);
+            refreshWorkdayApplyUrls(watch, outcome.allFetched());
             watch.setLastCheckedAt(Instant.now());
             watch.setLastScanStatus(ScanStatus.SUCCESS);
             watch.setLastErrorMessage(null);
             companyWatchRepository.save(watch);
-            return new PollResult(watch.getId(), newJobs.size(), newJobs);
+            return new PollResult(watch.getId(), outcome.newJobs().size(), outcome.newJobs());
         } catch (Exception ex) {
             watch.setLastCheckedAt(Instant.now());
             watch.setLastScanStatus(ScanStatus.FAILED);
             watch.setLastErrorMessage(truncate(friendlyMessage(ex), 1000));
             companyWatchRepository.save(watch);
             throw new WatchPollException(watch.getId(), ex);
+        }
+    }
+
+    private void refreshWorkdayApplyUrls(CompanyWatch watch, List<JobPostingDto> fetched) {
+        if (watch.getAtsType() != AtsType.WORKDAY || fetched.isEmpty()) {
+            return;
+        }
+        Map<String, JobPostingDto> byExternalId = new HashMap<>();
+        for (JobPostingDto dto : fetched) {
+            byExternalId.put(dto.externalId(), dto);
+        }
+        for (JobPosting posting : jobPostingRepository.findByCompanyWatchId(watch.getId())) {
+            JobPostingDto latest = byExternalId.get(posting.getExternalId());
+            if (latest != null && !latest.applyUrl().equals(posting.getApplyUrl())) {
+                posting.setApplyUrl(latest.applyUrl());
+                jobPostingRepository.save(posting);
+            }
         }
     }
 

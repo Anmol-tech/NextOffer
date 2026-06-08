@@ -13,6 +13,10 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
 
     boolean existsByCompanyWatchIdAndExternalId(Long companyWatchId, String externalId);
 
+    Optional<JobPosting> findByCompanyWatchIdAndExternalId(Long companyWatchId, String externalId);
+
+    List<JobPosting> findByCompanyWatchId(Long companyWatchId);
+
     @Query("SELECT jp.externalId FROM JobPosting jp WHERE jp.companyWatch.id = :watchId")
     Set<String> findExternalIdsByCompanyWatchId(@Param("watchId") Long watchId);
 

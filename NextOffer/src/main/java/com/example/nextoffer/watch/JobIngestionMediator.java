@@ -27,7 +27,7 @@ public class JobIngestionMediator {
     /**
      * @param knownExternalIds mutable set of IDs already stored; new IDs are added when detected
      */
-    public List<JobPostingDto> pollWatch(
+    public PollOutcome pollWatch(
             CompanyWatch watch,
             Set<String> knownExternalIds,
             boolean notifyListeners) {
@@ -43,6 +43,9 @@ public class JobIngestionMediator {
                 }
             }
         }
-        return newJobs;
+        return new PollOutcome(newJobs, fetched);
+    }
+
+    public record PollOutcome(List<JobPostingDto> newJobs, List<JobPostingDto> allFetched) {
     }
 }

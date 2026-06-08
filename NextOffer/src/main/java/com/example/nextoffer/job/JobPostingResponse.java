@@ -1,5 +1,7 @@
 package com.example.nextoffer.job;
 
+import com.example.nextoffer.career.AtsType;
+import com.example.nextoffer.career.WorkdayUrlResolver;
 import com.example.nextoffer.tracker.ApplicationStatus;
 
 import java.time.Instant;
@@ -18,6 +20,11 @@ public record JobPostingResponse(
         Instant statusUpdatedAt
 ) {
     public static JobPostingResponse from(JobPosting job) {
+        String applyUrl = job.getApplyUrl();
+        if (job.getCompanyWatch().getAtsType() == AtsType.WORKDAY) {
+            applyUrl = WorkdayUrlResolver.repairApplyUrl(
+                    applyUrl, job.getCompanyWatch().getCareerPageUrl());
+        }
         return new JobPostingResponse(
                 job.getId(),
                 job.getCompanyWatch().getId(),
@@ -25,7 +32,7 @@ public record JobPostingResponse(
                 job.getCompanyName(),
                 job.getTitle(),
                 job.getLocation(),
-                job.getApplyUrl(),
+                applyUrl,
                 job.getDescription(),
                 job.getFirstSeenAt(),
                 job.getApplicationStatus(),

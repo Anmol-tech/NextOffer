@@ -116,9 +116,7 @@ public class WorkdayFetchStrategy implements CareerPageFetchStrategy {
                 ? rawId.replaceAll("[^a-zA-Z0-9_-]", "_")
                 : posting.title().replaceAll("\\s+", "_") + "_" + System.nanoTime());
 
-        String applyUrl = posting.externalPath() != null
-                ? coords.baseUrl() + posting.externalPath()
-                : coords.baseUrl();
+        String applyUrl = coords.applyUrl(posting.externalPath());
 
         String location = posting.locationsText() != null ? posting.locationsText() : "Unspecified";
 

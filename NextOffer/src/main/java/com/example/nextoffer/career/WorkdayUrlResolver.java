@@ -18,7 +18,7 @@ public class WorkdayUrlResolver {
     private static final Pattern HOST_PATTERN =
             Pattern.compile("^([a-zA-Z0-9_-]+)\\.(wd\\d+)\\.myworkdayjobs\\.com$");
 
-    public record WorkdayCoordinates(String tenant, String instance, String jobBoard) {
+    public record WorkdayCoordinates(String tenant, String instance, String jobBoard, String locale) {
         /** Base URL for this tenant, e.g. https://amazon.wd5.myworkdayjobs.com */
         public String baseUrl() {
             return "https://" + tenant + "." + instance + ".myworkdayjobs.com";
@@ -28,6 +28,42 @@ public class WorkdayUrlResolver {
         public String cxsJobsUrl() {
             return baseUrl() + "/wday/cxs/" + tenant + "/" + jobBoard + "/jobs";
         }
+
+        /** Public career-page path prefix, e.g. /en-US/Workday or /Workday */
+        public String jobBoardBasePath() {
+            if (locale != null && !locale.isBlank()) {
+                return "/" + locale + "/" + jobBoard;
+            }
+            return "/" + jobBoard;
+        }
+
+        /** Build a browser apply URL from the API externalPath (e.g. /job/Location/Title_ID). */
+        public String applyUrl(String externalPath) {
+            if (externalPath == null || externalPath.isBlank()) {
+                return baseUrl() + jobBoardBasePath();
+            }
+            String path = externalPath.startsWith("/") ? externalPath : "/" + externalPath;
+            return baseUrl() + jobBoardBasePath() + path;
+        }
+    }
+
+    /**
+     * Fix legacy apply URLs stored without the job-board prefix
+     * (e.g. .../job/Location/Title vs .../en-US/Workday/job/Location/Title).
+     */
+    public static String repairApplyUrl(String applyUrl, String careerPageUrl) {
+        if (applyUrl == null || applyUrl.isBlank() || careerPageUrl == null || careerPageUrl.isBlank()) {
+            return applyUrl;
+        }
+        try {
+            String path = URI.create(applyUrl.trim()).getPath();
+            if (path == null || !path.startsWith("/job/")) {
+                return applyUrl;
+            }
+            return parseFromUrl(careerPageUrl).applyUrl(path);
+        } catch (Exception e) {
+            return applyUrl;
+        }
     }
 
     public static WorkdayCoordinates resolve(String careerPageUrl, String boardToken) {
@@ -35,7 +71,7 @@ public class WorkdayUrlResolver {
             // boardToken can store "tenant/instance/jobBoard" as a pre-parsed value
             String[] parts = boardToken.split("/", 3);
             if (parts.length == 3) {
-                return new WorkdayCoordinates(parts[0], parts[1], parts[2]);
+                return new WorkdayCoordinates(parts[0], parts[1], parts[2], null);
             }
         }
         return parseFromUrl(careerPageUrl);
@@ -52,8 +88,8 @@ public class WorkdayUrlResolver {
             }
             String tenant = m.group(1);
             String instance = m.group(2);
-            String jobBoard = extractJobBoard(uri.getPath(), tenant);
-            return new WorkdayCoordinates(tenant, instance, jobBoard);
+            PathInfo pathInfo = extractPathInfo(uri.getPath(), tenant);
+            return new WorkdayCoordinates(tenant, instance, pathInfo.jobBoard(), pathInfo.locale());
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (Exception e) {
@@ -61,20 +97,26 @@ public class WorkdayUrlResolver {
         }
     }
 
-    private static String extractJobBoard(String path, String tenant) {
+    private record PathInfo(String locale, String jobBoard) {}
+
+    private static PathInfo extractPathInfo(String path, String tenant) {
+        String defaultBoard = tenant + "_careers";
         if (path == null || path.isBlank() || path.equals("/")) {
-            return tenant + "_careers";
+            return new PathInfo(null, defaultBoard);
         }
-        // Strip leading slash, split segments
+        String locale = null;
+        String jobBoard = defaultBoard;
         String[] segments = path.replaceAll("^/+", "").split("/");
-        // Skip locale segments like "en-US", "en_US"
         for (String segment : segments) {
             if (segment.isBlank()) continue;
-            if (segment.matches("[a-z]{2}[-_][A-Z]{2}")) continue; // e.g. en-US
-            if (segment.equalsIgnoreCase("jobs")) continue;
-            if (segment.equalsIgnoreCase("job")) continue;
-            return segment;
+            if (segment.matches("[a-z]{2}[-_][A-Z]{2}")) {
+                locale = segment.replace('_', '-');
+                continue;
+            }
+            if (segment.equalsIgnoreCase("jobs") || segment.equalsIgnoreCase("job")) continue;
+            jobBoard = segment;
+            break;
         }
-        return tenant + "_careers";
+        return new PathInfo(locale, jobBoard);
     }
 }
