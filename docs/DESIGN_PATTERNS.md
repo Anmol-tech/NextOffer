@@ -114,7 +114,7 @@ If the rubric includes the UI layer, map patterns in documentation only (e.g. **
 
 - [x] Wire `JobPollingScheduler` to `JobIngestionMediator` + fetch strategies
 - [x] Persist `CompanyWatch`, `JobPosting` via JPA (+ REST APIs)
-- [ ] Persist `TailoredResume` via JPA
-- [ ] Connect `ResumeTailoringFacade` to OpenAI client
-- [ ] Run LaTeX in `LatexResumeRenderer` (subprocess or Docker)
-- [ ] REST controllers call **Facade**, not individual pattern classes directly
+- [x] Persist `TailoredResume` via JPA (+ resume REST APIs)
+- [x] Connect `ResumeTailoringFacade` to OpenAI/OpenRouter client (rule-based fallback)
+- [x] Run LaTeX/PDF via `PdfCompileService` (local + Docker on Render)
+- [x] Resume generation goes through `ResumeTailoringFacade` (controllers → `ResumeService` → facade)
