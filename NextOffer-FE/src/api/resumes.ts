@@ -1,4 +1,4 @@
-import { ApiError, apiFetch, getStoredToken } from './client'
+import { ApiError, apiFetch, apiUrl, getStoredToken } from './client'
 import type { BaseResume, TailoredResumeDetail, TailoredResumeSummary } from './types'
 
 export async function getBaseResume() {
@@ -39,7 +39,7 @@ export async function downloadTailoredResume(id: number, format: 'pdf' | 'latex'
     headers.set('Authorization', `Bearer ${token}`)
   }
 
-  const response = await fetch(`/api/resumes/tailored/${id}/download?format=${format}`, { headers })
+  const response = await fetch(apiUrl(`/api/resumes/tailored/${id}/download?format=${format}`), { headers })
 
   if (!response.ok) {
     const text = await response.text()

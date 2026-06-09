@@ -2,6 +2,12 @@ import type { ApiProblem } from './types'
 
 const TOKEN_KEY = 'nextoffer_token'
 
+/** Empty in dev (Vite proxy); set VITE_API_BASE_URL in production (e.g. Render). */
+export function apiUrl(path: string): string {
+  const base = import.meta.env.VITE_API_BASE_URL ?? ''
+  return `${base}${path}`
+}
+
 export class ApiError extends Error {
   status: number
   body: ApiProblem | null
@@ -36,7 +42,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     headers.set('Authorization', `Bearer ${token}`)
   }
 
-  const response = await fetch(path, { ...init, headers })
+  const response = await fetch(apiUrl(path), { ...init, headers })
 
   if (response.status === 204) {
     return undefined as T
